@@ -1,6 +1,13 @@
 // components/agent/AgentDetails.tsx
 "use client";
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useFetchAgentQuery } from "@/lib/features/agentApiSlice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +38,7 @@ import {
 import { toast } from "sonner";
 import { INTERNAL_SERVER_ERROR } from "@/error";
 import CookieLoader from "@/components/loader/cooki-loader";
+import UsersList from "./userslist";
 
 export default function AgentDetails({ id }: { id: string }) {
   const { data, isLoading, isError, error } = useFetchAgentQuery({ id });
@@ -59,7 +67,7 @@ export default function AgentDetails({ id }: { id: string }) {
     if (!confirm) return false;
 
     const asyncAction = async () => {
-       await deleteAgent(id).unwrap();
+      await deleteAgent(id).unwrap();
       return true;
     };
 
@@ -112,7 +120,7 @@ export default function AgentDetails({ id }: { id: string }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="relative">
           <CardHeader>
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
           </CardHeader>
@@ -121,6 +129,12 @@ export default function AgentDetails({ id }: { id: string }) {
               {data.statistics.totalUsers}
             </div>
           </CardContent>
+
+          <div className="absolute bottom-2 right-2">
+            <UsersList id={data.agent.id}>
+              <Button size={"sm"}>See Users</Button>
+            </UsersList>
+          </div>
         </Card>
 
         <Card>
@@ -313,7 +327,7 @@ export default function AgentDetails({ id }: { id: string }) {
             </div>
           </div>
 
-          {data.agent.documents && (
+          {!data.agent.documents.nidFront && (
             <div className="mt-6">
               <h3 className="font-medium mb-2">Documents</h3>
               <div className="flex gap-2">
@@ -322,6 +336,55 @@ export default function AgentDetails({ id }: { id: string }) {
                     View Documents
                   </Link>
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {data.agent.documents.nidFront && (
+            <div className="mt-6">
+              <h3 className="font-medium mb-2">Documents</h3>
+              <div className="flex gap-2">
+                <Dialog>
+                  <DialogTrigger>
+                    <Button variant="outline" asChild>
+                      View Documents
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle></DialogTitle>
+                    </DialogHeader>
+                    <div>
+                      <div className="h-[400px] overflow-y-scroll">
+                        <div className="flex justify-between items-center gap-3">
+                          <div className="flex-1 ">
+                            <img
+                              src={JSON.parse(data.agent?.documents).nidFront}
+                              alt="NID Front Side"
+                              className="w-full"
+                            />
+                          </div>
+                          <div className="flex-1 ">
+                            <img
+                              src={JSON.parse(data.agent?.documents).nidBack}
+                              alt="NID Back Side"
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-8 pb-8">
+                          <h3>Verify The agent</h3>
+                          <video height="100" controls>
+                            <source
+                              src={JSON.parse(data.agent.documents).faceVideo}
+                            />
+                          </video>
+                        </div>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           )}

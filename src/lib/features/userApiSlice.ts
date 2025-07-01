@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { apiSlice } from "./apiSlice";
 import {
   FetchUserOutput,
@@ -23,7 +24,14 @@ const userApiSlice = apiSlice.injectEndpoints({
       }),
       providesTags: ["user"],
     }),
-
+    fetchAgentUsers: builder.query<
+      { users: Prisma.UsersGetPayload<object>[] },
+      { id: string }
+    >({
+      query: ({ id }) => ({
+        url: `/api/users/agent/${id}`,
+      }),
+    }),
     userSuspention: builder.mutation<{ success: true }, UserSuspensionInput>({
       query: ({ id, actionType, message }) => ({
         url: `/api/users/${id}/suspension`,
@@ -62,6 +70,7 @@ const userApiSlice = apiSlice.injectEndpoints({
 export const {
   useFetchUsersQuery,
   useFetchUserQuery,
+  useFetchAgentUsersQuery,
   useUserSuspentionMutation,
   useUserRechargeMutation,
   useCreateMessageMutation,

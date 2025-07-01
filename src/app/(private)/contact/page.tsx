@@ -73,120 +73,126 @@ export default function ContactForm() {
         </div>
       )}
 
-      <Card className="max-w-2xl mx-auto mt-10">
-        <CardHeader>
-          <CardTitle className="text-center">Contact</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="grid grid-cols-2 gap-6"
-          >
-            {/* Facebook */}
-            <div className="space-y-1">
-              <Label htmlFor="facebook" className="flex items-center gap-2">
-                <Facebook className="w-4 h-4" /> Facebook
-              </Label>
-              <Input
-                id="facebook"
-                {...register("facebook")}
-                placeholder="https://facebook.com/yourpage"
-              />
-              {errors.facebook && (
-                <p className="text-sm text-red-500">
-                  {errors.facebook.message}
-                </p>
-              )}
-            </div>
+      {data && !isLoading && (
+        <Card className="max-w-2xl mx-auto mt-10">
+          <CardHeader>
+            <CardTitle className="text-center">Contact</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="grid grid-cols-2 gap-6"
+            >
+              {/* Facebook */}
+              <div className="space-y-1">
+                <Label htmlFor="facebook" className="flex items-center gap-2">
+                  <Facebook className="w-4 h-4" /> Facebook
+                </Label>
+                <Input
+                  id="facebook"
+                  {...register("facebook")}
+                  placeholder="https://facebook.com/yourpage"
+                />
+                {errors.facebook && (
+                  <p className="text-sm text-red-500">
+                    {errors.facebook.message}
+                  </p>
+                )}
+              </div>
 
-            {/* Telegram */}
-            <div className="space-y-1">
-              <Label htmlFor="telegram" className="flex items-center gap-2">
-                <Send className="w-4 h-4" /> Telegram
-              </Label>
-              <Input
-                id="telegram"
-                {...register("telegram")}
-                placeholder="https://t.me/yourchannel"
-              />
-              {errors.telegram && (
-                <p className="text-sm text-red-500">
-                  {errors.telegram.message}
-                </p>
-              )}
-            </div>
+              {/* Telegram */}
+              <div className="space-y-1">
+                <Label htmlFor="telegram" className="flex items-center gap-2">
+                  <Send className="w-4 h-4" /> Telegram
+                </Label>
+                <Input
+                  id="telegram"
+                  {...register("telegram")}
+                  placeholder="https://t.me/yourchannel"
+                />
+                {errors.telegram && (
+                  <p className="text-sm text-red-500">
+                    {errors.telegram.message}
+                  </p>
+                )}
+              </div>
 
-            {/* Email */}
-            <div className="space-y-1">
-              <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail className="w-4 h-4" /> Email
-              </Label>
-              <Input
-                id="email"
-                {...register("email")}
-                placeholder="admin@example.com"
-              />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
-              )}
-            </div>
+              {/* Email */}
+              <div className="space-y-1">
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" /> Email
+                </Label>
+                <Input
+                  id="email"
+                  {...register("email")}
+                  placeholder="admin@example.com"
+                />
+                {errors.email && (
+                  <p className="text-sm text-red-500">{errors.email.message}</p>
+                )}
+              </div>
 
-            {/* Instagram */}
-            <div className="space-y-1">
-              <Label htmlFor="instagram" className="flex items-center gap-2">
-                <Instagram className="w-4 h-4" /> Instagram
-              </Label>
-              <Input
-                id="instagram"
-                {...register("instagram")}
-                placeholder="https://instagram.com/yourprofile"
-              />
-              {errors.instagram && (
-                <p className="text-sm text-red-500">
-                  {errors.instagram.message}
-                </p>
-              )}
-            </div>
+              {/* Instagram */}
+              <div className="space-y-1">
+                <Label htmlFor="instagram" className="flex items-center gap-2">
+                  <Instagram className="w-4 h-4" /> Instagram
+                </Label>
+                <Input
+                  id="instagram"
+                  {...register("instagram")}
+                  placeholder="https://instagram.com/yourprofile"
+                />
+                {errors.instagram && (
+                  <p className="text-sm text-red-500">
+                    {errors.instagram.message}
+                  </p>
+                )}
+              </div>
 
-            {/* Twitter */}
-            <div className="space-y-1">
-              <Label htmlFor="twitter" className="flex items-center gap-2">
-                <Twitter className="w-4 h-4" /> Twitter
-              </Label>
-              <Input
-                id="twitter"
-                {...register("twitter")}
-                placeholder="https://twitter.com/yourhandle"
-              />
-              {errors.twitter && (
-                <p className="text-sm text-red-500">{errors.twitter.message}</p>
-              )}
-            </div>
+              {/* Twitter */}
+              <div className="space-y-1">
+                <Label htmlFor="twitter" className="flex items-center gap-2">
+                  <Twitter className="w-4 h-4" /> Twitter
+                </Label>
+                <Input
+                  id="twitter"
+                  {...register("twitter")}
+                  placeholder="https://twitter.com/yourhandle"
+                />
+                {errors.twitter && (
+                  <p className="text-sm text-red-500">
+                    {errors.twitter.message}
+                  </p>
+                )}
+              </div>
 
-            {/* YouTube */}
-            <div className="space-y-1">
-              <Label htmlFor="youtube" className="flex items-center gap-2">
-                <Youtube className="w-4 h-4" /> YouTube
-              </Label>
-              <Input
-                id="youtube"
-                {...register("youtube")}
-                placeholder="https://youtube.com/yourchannel"
-              />
-              {errors.youtube && (
-                <p className="text-sm text-red-500">{errors.youtube.message}</p>
-              )}
-            </div>
+              {/* YouTube */}
+              <div className="space-y-1">
+                <Label htmlFor="youtube" className="flex items-center gap-2">
+                  <Youtube className="w-4 h-4" /> YouTube
+                </Label>
+                <Input
+                  id="youtube"
+                  {...register("youtube")}
+                  placeholder="https://youtube.com/yourchannel"
+                />
+                {errors.youtube && (
+                  <p className="text-sm text-red-500">
+                    {errors.youtube.message}
+                  </p>
+                )}
+              </div>
 
-            {/* Submit Button */}
-            <div className="col-span-2">
-              <Button type="submit" className="w-full">
-                Update Contact Info
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+              {/* Submit Button */}
+              <div className="col-span-2">
+                <Button type="submit" className="w-full">
+                  Update Contact Info
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
     </>
   );
 }

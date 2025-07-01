@@ -11,7 +11,7 @@ export const GET = async (
 
     const user = await db.users.findUnique({
       where: { id },
-      include: { wallet: true },
+      include: { wallet: true, bettingRecord: true },
     });
 
     if (!user) {
@@ -81,6 +81,9 @@ export const GET = async (
     );
     const latestTransactions = allTransactions.slice(0, 10);
 
+    const totalBet = Number(user.bettingRecord?.totalBet) || 0;
+    const totalWin = Number(user.bettingRecord?.totalWin) || 0;
+
     return NextResponse.json({
       success: true,
       user,
@@ -91,9 +94,9 @@ export const GET = async (
         lastWithdraws,
       },
       bettingStatistics: {
-        totalBet: 0,
-        totalWin: 0,
-        totalLosss: 0,
+        totalBet: totalBet,
+        totalWin: totalWin,
+        totalLosss: totalBet - totalWin,
         winRate: 0,
       },
       latestTransactions,

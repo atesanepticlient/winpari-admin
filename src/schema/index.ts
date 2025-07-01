@@ -192,6 +192,7 @@ export const siteUpdateSchema = zod.object({
   agentWithdrawEarning: zod.optional(zod.string()),
   maxAgDeposit: zod.optional(zod.string()),
   minAgDeposit: zod.optional(zod.string()),
+  minAgentSecurityMoney: zod.optional(zod.string()),
 });
 
 export type SiteUpdateSchema = zod.infer<typeof siteUpdateSchema>;

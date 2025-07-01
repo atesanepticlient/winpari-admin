@@ -19,7 +19,9 @@ export interface UsersDataOutput {
     total: number;
     page: number;
     limit: number;
-    users: Prisma.UsersGetPayload<{ include: { wallet: true } }>[];
+    users: Prisma.UsersGetPayload<{
+      include: { wallet: true; bettingRecord: true };
+    }>[];
   };
 }
 
@@ -183,7 +185,9 @@ export interface UsersFetchInput {
 
 export interface FetchUserOutput {
   success: boolean;
-  user: Prisma.UsersGetPayload<{ include: { wallet: true } }>;
+  user: Prisma.UsersGetPayload<{
+    include: { wallet: true; bettingRecord: true };
+  }>;
   financialOverview: {
     totalDeposits: number;
     totalWithdraws: number;

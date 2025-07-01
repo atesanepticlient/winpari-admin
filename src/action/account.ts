@@ -112,7 +112,7 @@ export const emailChange = async (data: EmailChangeSchema) => {
 
     await db.admin.update({
       where: { id: admin.id },
-      data: { email: newEmail },
+      data: { email: newEmail, twoFAEmail: newEmail },
     });
     return { success: true };
   } catch {

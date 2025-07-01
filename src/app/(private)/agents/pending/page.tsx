@@ -16,7 +16,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +30,7 @@ export default function PendingAgentsPage() {
   const [verifyAgent] = useVerifyAgentMutation();
   const [selectedAgent, setSelectedAgent] = useState<{
     id: string;
-    documents: string;
+    documents: any;
     fullName: string;
   } | null>(null);
 
@@ -39,7 +39,7 @@ export default function PendingAgentsPage() {
       await verifyAgent({ id, action }).unwrap();
       toast.success(`Agent ${action}d successfully`);
       setSelectedAgent(null);
-    } catch  {
+    } catch {
       toast.error(`Failed to ${action} agent`);
     }
   };
@@ -167,14 +167,35 @@ export default function PendingAgentsPage() {
               {selectedAgent?.fullName}&apos;s Verification Documents
             </DialogTitle>
           </DialogHeader>
-          <div className="relative aspect-video bg-gray-100 rounded-md overflow-hidden">
+          <div className="relative aspect-video  overflow-hidden">
             {selectedAgent?.documents && (
-              <Image
-                src={selectedAgent.documents}
-                alt="Verification document"
-                fill
-                className="object-contain"
-              />
+              <div className="h-[400px] overflow-y-scroll">
+                <div className="flex justify-between items-center gap-3">
+                  <div className="flex-1 ">
+                    <img
+                      src={JSON.parse(selectedAgent?.documents).nidFront}
+                      alt="NID Front Side"
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex-1 ">
+                    <img
+                      src={JSON.parse(selectedAgent?.documents).nidBack}
+                      alt="NID Back Side"
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-8 pb-8">
+                  <h3>Verify The agent</h3>
+                  <video height="100" controls>
+                    <source
+                      src={JSON.parse(selectedAgent.documents).faceVideo}
+                    />
+                  </video>
+                </div>
+              </div>
             )}
           </div>
           <div className="flex justify-end gap-2 mt-4">

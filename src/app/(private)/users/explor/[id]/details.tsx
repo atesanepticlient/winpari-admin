@@ -61,7 +61,6 @@ const Details = ({ id }: { id: string }) => {
   const user = data?.user;
   const financialOverview = data?.financialOverview;
   const bettingStatistics = data?.bettingStatistics;
-  const latestTransactions = data?.latestTransactions;
 
   const [rechargeApi] = useUserRechargeMutation();
 
@@ -286,17 +285,20 @@ const Details = ({ id }: { id: string }) => {
                     </span>
                   </div>
                   <Separator className="bg-gray-800" />
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#9CA3AF]">Referrer ID:</span>
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/users/${user!.referredById}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        View
-                      </Link>
+                  {user!.referredById && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#9CA3AF]">Referrer ID:</span>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/users/${user!.referredById}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          View
+                        </Link>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
                   <div className="flex justify-between items-center">
                     <span className="text-[#9CA3AF]">Refer Code:</span>
                     <div className="flex items-center gap-2">
@@ -563,79 +565,19 @@ const Details = ({ id }: { id: string }) => {
           </div>
 
           {/* Recent Transactions */}
-          <Card className={` border-gray-800`}>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recent Transactions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow className={"border-gray-800"}>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date/Time</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {latestTransactions?.map((transaction) => (
-                    <TableRow
-                      key={transaction.id}
-                      className={"border-gray-800"}
-                    >
-                      <TableCell className="font-medium">
-                        {transaction.amount}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            transaction.type === "deposit"
-                              ? "bg-green-500/10 text-green-500 border-green-500/20"
-                              : "bg-blue-500/10 text-blue-500 border-blue-500/20"
-                          }
-                        >
-                          {transaction.type === "deposit" ? (
-                            <i className="fa-solid fa-arrow-down mr-1"></i>
-                          ) : (
-                            <i className="fa-solid fa-arrow-up mr-1"></i>
-                          )}
-                          {transaction.type}
-                        </Badge>
-                      </TableCell>
-
-                      <TableCell className="capitalize">
-                        <Badge
-                          variant="outline"
-                          className={
-                            transaction.status === "APPROVED"
-                              ? "bg-green-500/10 text-green-500 border-green-500/20"
-                              : transaction.status === "PENDING"
-                              ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                              : "bg-red-500/10 text-red-500 border-red-500/20"
-                          }
-                        >
-                          {transaction.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {moment(transaction.createdAt).calendar()}
-                      </TableCell>
-                      <TableCell className="text-right"></TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-gray-500">
-                  Showing{" "}
-                  <span className="font-medium">
-                    {latestTransactions?.length}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div
+            style={{
+              border: "1px dashed #4F39F6",
+            }}
+            className="w-full h-[100px] rounded-2xl  bg-indigo-500/15 flex justify-center items-center"
+          >
+            <Link
+              href={`/users/${data.user.id}/transactions`}
+              className=" text-indigo-500 underline rounded-2xl"
+            >
+              See Transactions
+            </Link>
+          </div>
         </div>
       )}
 

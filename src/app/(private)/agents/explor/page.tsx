@@ -152,7 +152,7 @@ export default function AgentList() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  agents?.map((agent : any) => (
+                  agents?.map((agent: any) => (
                     <TableRow key={agent.id}>
                       <TableCell>{agent.fullName}</TableCell>
                       <TableCell>{agent.email}</TableCell>
@@ -173,7 +173,11 @@ export default function AgentList() {
                       </TableCell>
                       <TableCell>
                         <Link href={`/agents/${agent.id}`}>
-                          <Button variant="outline" size="sm" className="cursor-pointer">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="cursor-pointer"
+                          >
                             <IoEyeOutline className="w-4 h-4 mr-2" />
                             View
                           </Button>

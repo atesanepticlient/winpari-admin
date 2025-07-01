@@ -1,12 +1,12 @@
 import nodeMailer, { SendMailOptions } from "nodemailer";
 
 const transporter = nodeMailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
+  host: process.env.SMTP_HOST, // e.g. mail.yourdomain.com
+  port: parseInt(process.env.SMTP_PORT || "465"),
+  secure: process.env.SMTP_SECURE === "true", // true for 465, false for 587
   auth: {
-    user: process.env.SMTP_USERNAME,
-    pass: process.env.SMTP_PASSWORD,
+    user: process.env.SMTP_USERNAME, // your@yourdomain.com
+    pass: process.env.SMTP_PASSWORD, // email password
   },
 });
 
@@ -15,7 +15,7 @@ export const sendAdminVerificationTokenMail = async (
   token: string
 ) => {
   const options = {
-    from: process.env.SMTP_USERNAME,
+    from: `Livvbet <${process.env.SMTP_USERNAME}>`,
     to: email,
     html: `<html>
     <body>

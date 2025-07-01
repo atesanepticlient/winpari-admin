@@ -37,7 +37,7 @@ const Users: React.FC = () => {
   });
 
   const { data, isLoading, isFetching } = useFetchUsersQuery(filter);
-  console.log("Data = ", data);
+
   const users = data?.payload.users;
   const totalFound = data?.payload.total;
 
@@ -84,8 +84,15 @@ const Users: React.FC = () => {
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{moment(user.createdAt).calendar()}</TableCell>
                   <TableCell>{renderStatusBadge(user.isBanned)}</TableCell>
-                  <TableCell>৳0.00</TableCell>
-                  <TableCell>0.00%</TableCell>
+                  <TableCell>
+                    ৳{Number(user.bettingRecord?.totalBet) || 0}
+                  </TableCell>
+                  <TableCell>
+                    {(Number(user.bettingRecord?.totalWin) ||
+                      0 / Number(user.bettingRecord?.totalBet) ||
+                      0) * 100}
+                    %
+                  </TableCell>
                   <TableCell className="text-right">
                     <Link href={`/users/explor/${user.id}`}>
                       <Button

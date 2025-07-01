@@ -41,7 +41,9 @@ export const GET = async (req: NextRequest) => {
       },
       include: {
         wallet: true,
+        bettingRecord: true,
       },
+
       skip,
       take: limit,
     });

@@ -46,6 +46,7 @@ const Site = () => {
       agentWithdrawEarning: "",
       maxAgDeposit: "",
       minAgDeposit: "",
+      minAgentSecurityMoney: "",
     },
     resolver: zodResolver(siteUpdateSchema),
   });
@@ -85,6 +86,7 @@ const Site = () => {
         minAgentPayout: site.minAgentPayout?.toString() || "",
         agentDepositEarning: site.agentDepositEarning?.toString() || "",
         agentWithdrawEarning: site.agentWithdrawEarning?.toString() || "",
+        minAgentSecurityMoney: site.minAgentSecurityMoney?.toString() || "",
       });
     }
   }, [site]);
@@ -398,6 +400,27 @@ const Site = () => {
                             {...field}
                             className="w-[100px]"
                             placeholder="Ex:10%"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="minAgentSecurityMoney"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between">
+                      <FormLabel>Agent Security Money</FormLabel>
+                      <div>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            className="w-[100px]"
+                            placeholder="Ex:10000"
                           />
                         </FormControl>
                         <FormMessage />

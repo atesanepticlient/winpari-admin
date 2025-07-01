@@ -166,3 +166,12 @@
     -webkit-mask: conic-gradient(#0000 360deg, #000 0);
   }
 }
+
+
+
+#api .logo{
+  @apply !hidden
+}
+#api .container .nav{
+  @apply !hidden
+}
