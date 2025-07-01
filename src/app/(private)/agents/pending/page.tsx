@@ -16,14 +16,14 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import {  useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import Image from "next/image";
+
 
 export default function PendingAgentsPage() {
   const { data: agents, isLoading, isError } = useGetPendingAgentsQuery({});

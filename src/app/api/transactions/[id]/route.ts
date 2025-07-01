@@ -125,7 +125,7 @@ export async function GET(
         limit,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch transactions" },
       { status: 500 }

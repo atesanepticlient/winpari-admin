@@ -16,7 +16,7 @@ export const GET = async (
     });
 
     return Response.json({ users }, { status: 200 });
-  } catch (error) {
+  } catch  {
     return Response.json({ error: INTERNAL_SERVER_ERROR }, { status: 500 });
   }
 };

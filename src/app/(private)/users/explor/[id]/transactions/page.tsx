@@ -2,8 +2,8 @@
 "use client";
 
 import { useGetTransactionsQuery } from "@/lib/features/transactionsApi";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -24,7 +24,6 @@ const LIMIT = 10;
 
 export default function UserTransactions() {
   const params = useParams();
-  const router = useRouter();
   const userId = params.id as string;
   const [page, setPage] = useState(1);
 
@@ -36,14 +35,6 @@ export default function UserTransactions() {
   console.log({ data });
   const renderStatusBadge = (status?: string) => {
     if (!status) return null;
-
-    const variantMap = {
-      PENDING: "secondary",
-      APPROVED: "default",
-      REJECTED: "destructive",
-      CLEARED: "default",
-      UNCLEARED: "destructive",
-    };
 
     return <Badge>{status}</Badge>;
   };
