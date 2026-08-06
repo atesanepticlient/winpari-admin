@@ -48,6 +48,17 @@ import { toast } from "sonner";
 import { INTERNAL_SERVER_ERROR } from "@/error";
 import { PaymentStatus } from "@prisma/client";
 
+// Crypto amounts are in USD; mobile banking amounts are in the user's local
+// wallet currency. Used to pick the right symbol wherever an amount renders.
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  BDT: "৳",
+  PKR: "₨",
+  INR: "₹",
+  USD: "$",
+};
+const getCurrencySymbol = (code?: string | null) =>
+  CURRENCY_SYMBOLS[(code || "BDT").toUpperCase()] || `${code || "৳"} `;
+
 const DepositsPage = () => {
   const [filter, setFilter] = useState({
     card: "",
@@ -74,7 +85,7 @@ const DepositsPage = () => {
         wallets.find(
           (wallet) =>
             withdraws[i]!.withdrawEWallet!.walletName.toLowerCase() ==
-            wallet.walletName.toLowerCase()
+            wallet.walletName.toLowerCase(),
         )
       ) {
         continue;
@@ -95,7 +106,7 @@ const DepositsPage = () => {
 
   const handleArroval = (
     depositId: string,
-    actionType: "accept" | "reject"
+    actionType: "accept" | "reject",
   ) => {
     const asyncAction = async () => {
       const response = await arrovalAPi({
@@ -135,6 +146,13 @@ const DepositsPage = () => {
   });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
+  // Only crypto withdraws can be manually approved/rejected by an admin —
+  // mobile banking (e-wallet) withdraws are view-only in this modal.
+  const isCryptoWithdraw =
+    selectedWithdraw?.withdrawEWallet?.category === "CRYPTO";
+  const isActionable =
+    isCryptoWithdraw && selectedWithdraw?.status === "PENDING";
+
   const handleViewDetails = (deposit: any) => {
     setSelectedWithdraw(deposit);
     setIsModalOpen(true);
@@ -167,7 +185,7 @@ const DepositsPage = () => {
   useEffect(() => {
     if (selectedWithdraw) {
       setMessage(
-        `${selectedWithdraw.amount} Your Withdraw was successfully added`
+        `${selectedWithdraw.amount} Your Withdraw was successfully added`,
       );
     }
   }, [selectedWithdraw]);
@@ -184,6 +202,7 @@ const DepositsPage = () => {
                 <TableHead>Player ID</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Payment Gateway</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -194,7 +213,12 @@ const DepositsPage = () => {
                 <TableRow key={withdraw.id} className="">
                   <TableCell className="font-medium ">{withdraw.id}</TableCell>
                   <TableCell>{withdraw.user.playerId}</TableCell>
-                  <TableCell>৳{+withdraw.amount}</TableCell>
+                  <TableCell>
+                    {withdraw.withdrawEWallet?.category === "CRYPTO"
+                      ? getCurrencySymbol("USD")
+                      : getCurrencySymbol(withdraw.user?.wallet?.currencyCode)}
+                    {+withdraw.amount}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center capitalize">
                       <img
@@ -204,6 +228,13 @@ const DepositsPage = () => {
                       />
                       {withdraw.withdrawEWallet.walletName}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {withdraw.withdrawEWallet?.category === "CRYPTO" ? (
+                      <Badge variant="outline">Crypto</Badge>
+                    ) : (
+                      <Badge variant="secondary">Mobile Banking</Badge>
+                    )}
                   </TableCell>
                   <TableCell>{moment(withdraw.createdAt).calendar()}</TableCell>
                   <TableCell>{renderStatusBadge(withdraw.status)}</TableCell>
@@ -340,7 +371,7 @@ const DepositsPage = () => {
                                   range as {
                                     from: Date | undefined;
                                     to: Date | undefined;
-                                  }
+                                  },
                                 );
                                 if (range?.to) setIsCalendarOpen(false);
                               }}
@@ -360,7 +391,7 @@ const DepositsPage = () => {
                         <Select
                           value={filter.card}
                           onValueChange={(value) =>
-                            handleChangeFilterValues("gateway", value)
+                            handleChangeFilterValues("card", value)
                           }
                         >
                           <SelectTrigger id="payment-gateway" className="mt-1">
@@ -438,7 +469,7 @@ const DepositsPage = () => {
                             onChange={(e) =>
                               handleChangeFilterValues(
                                 "minAmount",
-                                +e.target.value
+                                +e.target.value,
                               )
                             }
                             className="text-sm"
@@ -451,7 +482,7 @@ const DepositsPage = () => {
                             onChange={(e) =>
                               handleChangeFilterValues(
                                 "maxAmount",
-                                +e.target.value
+                                +e.target.value,
                               )
                             }
                             className="text-sm"
@@ -484,30 +515,37 @@ const DepositsPage = () => {
                           Transaction Information
                         </h3>
                         <div className=" p-4 rounded-lg space-y-2">
-                          {/* <div className="flex justify-between">
-                            <span className="text-sm text-gray-500">
-                              Transaction ID:
-                            </span>
-                            <span className="text-sm font-medium">
-                              {selectedWithdraw.transactionId}
-                            </span>
-                          </div> */}
-                          {/* <div className="flex justify-between">
-                            <span className="text-sm text-gray-500">
-                              Tracking ID:
-                            </span>
-                            <span className="text-sm font-medium">
-                              {selectedDeposit.trackingNumber}
-                            </span>
-                          </div> */}
                           <div className="flex justify-between">
                             <span className="text-sm text-gray-500">
                               Amount:
                             </span>
                             <span className="text-sm font-medium">
-                              ৳{+selectedWithdraw.amount}
+                              {isCryptoWithdraw
+                                ? getCurrencySymbol("USD")
+                                : getCurrencySymbol(
+                                    selectedWithdraw.user?.wallet?.currencyCode,
+                                  )}
+                              {+selectedWithdraw.amount}
                             </span>
                           </div>
+                          {isCryptoWithdraw && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-500">
+                                Converted (
+                                {selectedWithdraw.walletCurrency ||
+                                  selectedWithdraw.user?.wallet?.currencyCode ||
+                                  "local"}
+                                ):
+                              </span>
+                              <span className="text-sm font-medium">
+                                {getCurrencySymbol(
+                                  selectedWithdraw.walletCurrency ||
+                                    selectedWithdraw.user?.wallet?.currencyCode,
+                                )}
+                                {selectedWithdraw.convertedAmount ?? "—"}
+                              </span>
+                            </div>
+                          )}
                           <div className="flex justify-between">
                             <span className="text-sm text-gray-500">
                               Status:
@@ -553,7 +591,9 @@ const DepositsPage = () => {
                             <span className="text-sm text-gray-500">
                               Wallet Type
                             </span>
-                            <span className="text-sm font-medium">Ewallet</span>
+                            <span className="text-sm font-medium">
+                              {isCryptoWithdraw ? "Crypto" : "Mobile Banking"}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-gray-500">
@@ -605,6 +645,15 @@ const DepositsPage = () => {
                               {selectedWithdraw.user.phone}
                             </span>
                           </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-500">
+                              Wallet Currency:
+                            </span>
+                            <span className="text-sm font-medium">
+                              {selectedWithdraw.user?.wallet?.currencyCode ||
+                                "N/A"}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
@@ -613,11 +662,15 @@ const DepositsPage = () => {
                           Notes
                         </h3>
                         <div className="p-4 rounded-lg bg-input/30">
-                          <p className="text-sm">Withdraw</p>
+                          <p className="text-sm">
+                            {isCryptoWithdraw
+                              ? "Withdraw"
+                              : "Mobile banking withdraws are processed automatically and shown here for reference only."}
+                          </p>
                         </div>
                       </div>
 
-                      {selectedWithdraw.status === "PENDING" && (
+                      {isActionable && (
                         <div>
                           <h3 className="text-sm font-medium text-gray-500 mb-2">
                             Message to User
@@ -637,7 +690,7 @@ const DepositsPage = () => {
                 )}
 
                 <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">
-                  {selectedWithdraw?.status === "PENDING" ? (
+                  {isActionable ? (
                     <>
                       <Button
                         disabled={arrovalActionLoading}

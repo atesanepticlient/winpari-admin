@@ -19,52 +19,99 @@ enum UserReference {
   AGENT
 }
 
+enum SignupMethod {
+  EMAIL
+  ONE_CLICK
+}
+
 model Users {
-  id                  String @id @default(cuid())
-  email               String @unique
-  phone               String
-  firstName           String
-  lastName            String
-  playerId            String @unique
+  id                  String   @id @default(cuid())
+  email               String?   
+  phone               String?                     // <- was required, now optional
+                                                    //    (one-click signups don't collect a phone)
+  firstName           String?                     // <- made optional: one-click signups skip this
+  lastName            String?                     // <- made optional: one-click signups skip this
+  playerId            String   @unique
   role                UserRole @default(USER)
   password            String
   casinoPassword      String
   referId             String?
-  isBanned            Boolean @default(false)
-  isNewUser           Boolean @default(true)
+  isBanned            Boolean  @default(false)
+  isNewUser           Boolean  @default(true)
   createdAt           DateTime @default(now())
-  getBouns            Boolean @default(false)         
+  getBouns            Boolean  @default(false)
+
+  // --- NEW FIELDS for the redesigned registration flow ---
+  country             String?                     // ISO country code chosen on step 2 ("SG", "BD", ...)
+  signupMethod        SignupMethod @default(EMAIL) // EMAIL (3-step wizard) or ONE_CLICK
+  // --------------------------------------------------------
+
   wallet              wallet?
   bonusWallet         BonusWallet?
   deposits            Deposit[]
+  aPayDeposits        APayDeposit[]
   withdraws           Withdraw[]
+  aPayWithdraws       APayWithdraw[]
   histories           PaymentHistory[]
   messages            Message[] @relation(name: "messages")
-  referral            Referral ?
-  referredBy          Referral ? @relation("ReferredUsers", fields: [referredById], references: [id])
+  referral            Referral?
+  referredBy          Referral? @relation("ReferredUsers", fields: [referredById], references: [id])
   referredById        String?
   agentDepositRecords AgentDepositRecord[]
   agentWithdrawRecords AgentWithdrawRecord[]
-  turnOver              UsersTurnOver?
-  agentId              String?
-  agent                agent?   @relation(fields: [agentId], references: [id])
+  turnOver            UsersTurnOver?
+  agentId             String?
+  agent               agent? @relation(fields: [agentId], references: [id])
 
-  // verification 
-  phoneVerified      Boolean @default(false)
-  verificationCode   String?
+  // verification
+  phoneVerified             Boolean @default(false)
+  verificationCode          String?
   verificationCodeExpiresAt DateTime?
 
-  bettingRecord     BettingRecord?
+  bettingRecord BettingRecord[]
 
-  // ------------
-  @@unique([email,playerId])
+  payinBonues     PayinBonus[]
+  cashBack        Cashback[]
+
+  tokenVersion Int      @default(0)
+
+// betting greg
+  sportsGameSessions  SportsGameSession[]
+  sportsBettingRecords BettingRecordSports[]
+  @@unique([email, playerId])
 }
+
+
+
+enum BettingCategory {
+  SLOT
+  LIVE_CASINO
+  OTHER
+  POKER
+  FISH
+  SPORTS
+}
+
+enum CasinoBetStatus {
+  RUNNING
+  SETTLED
+  CANCELED
+  VOID
+}
+
 model BettingRecord {
-  id                String @id @default(cuid()) 
-  totalBet          Decimal @default(0)
-  totalWin          Decimal @default(0)
-  userId            String @unique
-  user              Users @relation(fields: [userId], references: [id])
+  id         String          @id @default(cuid())
+  createdAt  DateTime        @default(now())
+  name       String?
+  category   BettingCategory?  @default(SLOT)
+  betAmount  Decimal
+  profitNLoss Decimal?
+  status     CasinoBetStatus       @default(RUNNING)
+  orderNo    String?
+  wagerCode  String?
+  roundId    String?
+  userId     String
+  user       Users            @relation(fields: [userId], references: [id])
 }
 
 
@@ -120,6 +167,9 @@ model admin {
   password            String
   createdAt           DateTime @default(now())
   eWallet             AdEWallet[]
+
+  twoFactorSecret String?  // TOTP secret — set once, never cleared
+  ipWhitelist     String[] @default([]) // empty = no IP restriction
 }
 model agent {
   id                  String @id @default(cuid())
@@ -269,59 +319,120 @@ enum TrxType {
   CASHOUT
   PAYMENT
 }
-model DepositEWallet {
-  id                  String @id @default(cuid())
-  walletName          String
-  walletImage         String
-  walletNumber        String
-  minDeposit          Decimal
-  maxDeposit          Decimal
-  rules               String?
-  isRecommended       Boolean @default(false)
-  isActive            Boolean @default(false)
-  trxType             TrxType @default(SENDMONEY)
-  deposits            Deposit[]
+enum WalletCategory {
+  MOBILE_BANKING
+  CRYPTO
+}
 
+model DepositEWallet {
+  id            String    @id @default(cuid())
+  walletName    String
+  walletImage   String
+  minDeposit    Decimal
+  maxDeposit    Decimal
+  isRecommended Boolean   @default(false)
+  isActive      Boolean   @default(false)
+  category      WalletCategory @default(MOBILE_BANKING)   // <- replaces name-regex guessing
+  deposits      Deposit[]
+  cryptoWallet  CryptoWallet?                              // <- present only when category = CRYPTO
+
+  @@index([isActive, isRecommended(sort: Desc)])
+  @@index([category])
 }
 
 model WithdrawEWallet {
-  id                  String @id @default(cuid())
-  walletName          String
-  walletImage         String
-  isRecommended       Boolean @default(true)
-  isActive            Boolean @default(true)
-  rules               String?
-  
-  withdraws           Withdraw[]
+  id            String     @id @default(cuid())
+  walletName    String
+  walletImage   String
+  minWithdraw   Decimal
+  maxWithdraw   Decimal
+  isRecommended Boolean    @default(true)
+  isActive      Boolean    @default(true)
+  category      WalletCategory @default(MOBILE_BANKING)
+  withdraws     Withdraw[]
+
+  @@index([isActive, isRecommended(sort: Desc)])
+  @@index([category])
 }
+
+// New: crypto-specific config, kept separate from the generic e-wallet table
+// on purpose — a crypto "wallet" needs an address/network, a mobile banking
+// wallet never does, so cramming both into one row was the original mistake.
+model CryptoWallet {
+  id               String   @id @default(cuid())
+  currencyCode     String   // "USDT", "BTC", "ETH" ...
+  network          String   // "TRC20", "ERC20", "BEP20" ...
+  address          String
+  qrCodeImage      String?
+  memo             String?  // destination tag / memo, if the network needs one
+  isActive         Boolean  @default(true)
+
+  depositEWalletId String   @unique
+  depositEWallet   DepositEWallet @relation(fields: [depositEWalletId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([currencyCode])
+}
+
+enum PaymentNotifyStatus {
+  UNSEEN
+  SEEN
+}
+
 model Deposit{
   id                  String @id @default(cuid())
-  payFrom             String
-  amount              Decimal
-  transactionId       String
   status              PaymentStatus @default(PENDING)
   userId              String
+  merchantId          String
   user                Users @relation(fields: [userId], references: [id])
   transactions        PaymentHistory?
-  createdAt           DateTime @default(now())
   ewalletId           String
   ewallet             DepositEWallet @relation(fields: [ewalletId], references: [id], onDelete: Cascade)
+  amount              Decimal?
+  payFrom             String?
+  userNotifyStatus    PaymentNotifyStatus @default(UNSEEN)
+
+
+  createdAt           DateTime @default(now())
+  // updatedAt           DateTime @updatedAt //active before go live
+}
+
+model APayDeposit {
+  id                  String @id @default(cuid())
+  orderId             String
+  trxId               String
+  createdAt           DateTime @default(now())
+  userId              String
+  user                Users @relation(fields: [userId], references: [id])
 }
 
 model Withdraw{
   id                  String @id @default(cuid())
-  paymentWalletNumber               String
-  amount              Decimal
   status              PaymentStatus @default(PENDING)
+  merchantId          String
   userId              String
   user                Users @relation(fields: [userId], references: [id])
-  createdAt           DateTime @default(now())
   transactions        PaymentHistory?
-
+  paymentWalletNumber    String?
+  amount                Decimal?
   withdrawEWalletID   String?
   withdrawEWallet     WithdrawEWallet? @relation(fields: [withdrawEWalletID], references: [id])
-}
+  userNotifyStatus    PaymentNotifyStatus @default(UNSEEN)
 
+  createdAt           DateTime @default(now())
+  // updatedAt           DateTime @updatedAt //active before go live
+
+}
+model APayWithdraw {
+  id                  String @id @default(cuid())
+  orderId             String
+  trxId               String
+  createdAt           DateTime @default(now())
+  userId              String
+  user                Users @relation(fields: [userId], references: [id])
+}
 enum PaymentHistoryStatus {
   PENDING
   SUCCESS
@@ -390,3 +501,122 @@ model Site {
 }
 
 
+
+
+
+enum BetStatus {
+  RUNNING
+  SETTLED
+  CANCELLED
+}
+
+enum TxType {
+  BET
+  WIN
+  BET_WIN // Combined bet & win in single request
+  ROLLBACK
+}
+
+// betting schema for grege
+model SportsGameSession {
+  id          String   @id @default(uuid())
+  sessionId   String   @unique // Provider's sessionid
+  userId      String
+  user        Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId      String?
+  currency    String   @default("BDT")
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bettingRecords BettingRecordSports[]
+
+  @@index([userId])
+}
+
+model BettingRecordSports {
+  id            String      @id @default(uuid())
+  transactionId String      @unique // Gregmorn transactionId (Idempotency Key)
+  sessionId     String?
+  session       SportsGameSession? @relation(fields: [sessionId], references: [sessionId], onDelete: SetNull)
+  userId        String
+  user          Users        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  gameId        String?
+  roundId       String?     // Extracted from info JSON if available
+  
+  txType        TxType
+  betAmount     Decimal     @default(0) @db.Decimal(18, 4)
+  winAmount     Decimal     @default(0) @db.Decimal(18, 4)
+  netAmount     Decimal     @default(0) @db.Decimal(18, 4) // winAmount - betAmount
+  
+  status        BetStatus   @default(RUNNING)
+  roundFinished Boolean     @default(false)
+  rawInfo       String?     @db.Text // Full provider info string JSON
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([transactionId])
+  @@index([roundId])
+}
+
+
+enum PayinBonusType {
+  FIRST_PAYIN
+  INVITATION
+
+}
+
+model PayinBonus {
+  id            String      @id @default(uuid())
+  percentage    Decimal @default(0)
+  type          PayinBonusType
+  expiry        DateTime
+  claimedBonus  Decimal?
+  isActive      Boolean @default(false)
+  userId        String
+  user          Users @relation(fields: [userId], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum CashbackType {
+  INVITATION
+}
+
+model Cashback {
+  id            String      @id @default(uuid())
+  type          CashbackType
+  amount        Decimal?
+  expiry        DateTime?
+  hasClaimed    Boolean @default(false)
+  claimable     Boolean @default(false)
+  userId        String
+  user          Users @relation(fields: [userId], references: [id])
+}
+
+
+model BonusSetting {
+  id           String   @id @default("global")
+  firstPayin   Decimal  @default(0)
+  firstPayinUpTo   Decimal
+  referPayin  Decimal  @default(0)
+  referPayinUpTo Decimal
+  inviationCode    Decimal  @default(0)
+  inviationCodeUpTo Decimal @default(0)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+
+
+model DollerRate {
+  id           String   @id @default("global")
+  bdt          Decimal @default(122)
+  pkr           Decimal @default(277)
+  inr         Decimal @default(95)
+}

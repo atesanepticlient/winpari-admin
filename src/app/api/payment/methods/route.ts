@@ -4,39 +4,81 @@ import { NextRequest } from "next/server";
 
 export const GET = async () => {
   try {
-    const depositsWallets = await db.depositEWallet.findMany({
-      where: {},
+    const depositWallets = await db.depositEWallet.findMany({
+      include: {
+        cryptoWallet: true, // Includes network, address, qrCodeImage if it's a crypto wallet
+      },
+      orderBy: {
+        isRecommended: "desc",
+      },
     });
 
     return Response.json(
       {
-        payload: {
-          methods: [{ methodData: depositsWallets, methodName: "E-Wallet" }],
-        },
+        success: true,
+        payload: depositWallets,
       },
-      { status: 200 }
+      { status: 200 },
     );
-  } catch {
+  } catch (error) {
     return Response.json({ message: INTERNAL_SERVER_ERROR }, { status: 500 });
   }
 };
 
 export const POST = async (req: NextRequest) => {
   try {
-    const { walletImage, walletName, walletNumber } = await req.json();
+    const body = await req.json();
+    const {
+      walletName,
+      walletImage,
+      minDeposit = 100,
+      maxDeposit = 1000,
+      category = "MOBILE_BANKING",
+      isRecommended = false,
+      isActive = true,
+      cryptoData, // Optional object containing { currencyCode, network, address, qrCodeImage, memo }
+    } = body;
 
-    await db.depositEWallet.create({
+    if (!walletName || !walletImage) {
+      return Response.json(
+        { error: "Missing required fields" },
+        { status: 400 },
+      );
+    }
+
+    const createdWallet = await db.depositEWallet.create({
       data: {
-        walletImage,
         walletName,
-        walletNumber,
-        minDeposit: 100,
-        maxDeposit: 1000,
+        walletImage,
+        minDeposit,
+        maxDeposit,
+        category,
+        isRecommended,
+        isActive,
+        ...(category === "CRYPTO" && cryptoData
+          ? {
+              cryptoWallet: {
+                create: {
+                  currencyCode: cryptoData.currencyCode,
+                  network: cryptoData.network,
+                  address: cryptoData.address,
+                  qrCodeImage: cryptoData.qrCodeImage,
+                  memo: cryptoData.memo,
+                },
+              },
+            }
+          : {}),
+      },
+      include: {
+        cryptoWallet: true,
       },
     });
 
-    return Response.json({ message: "Wallet created" }, { status: 201 });
-  } catch {
+    return Response.json(
+      { success: true, message: "Wallet created", payload: createdWallet },
+      { status: 201 },
+    );
+  } catch (error) {
     return Response.json({ message: INTERNAL_SERVER_ERROR }, { status: 500 });
   }
 };

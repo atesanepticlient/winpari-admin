@@ -29,16 +29,24 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { createVerification, verifyAdmin } from "@/action/login";
 import { redirect } from "next/navigation";
-// import { createAdmin, seedEwallets } from "@/action/create";
+import {
+  Loader2,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  KeyRound,
+} from "lucide-react";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  // const redirectTo = useSearchParams().get("redirect") || "/dashboard";
-
   const [pending, startTransition] = useTransition();
   const [hasTokenSent, setTokenSent] = useState(false);
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<zod.infer<typeof loginSchema>>({
     defaultValues: {
@@ -53,61 +61,86 @@ export function LoginForm({
     startTransition(() => {
       createVerification(data).then((res) => {
         if (res.success) {
+          if (res.qrCode) setQrCode(res.qrCode);
           setTokenSent(true);
         } else if (res.error) {
-          toast(`Oh! ${res.error}`);
+          toast.error(res.error);
         }
       });
     });
   };
+
   const handleVerify = (data: zod.infer<typeof loginSchema>) => {
     startTransition(() => {
       verifyAdmin(data).then((res) => {
         if (res.success) {
-          toast(res.success);
+          toast.success(res.success);
           location.reload();
           redirect("/dashboard");
         } else if (res.error) {
-          toast(`Oh! ${res.error}`);
+          toast.error(res.error);
         }
       });
     });
   };
+
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          {!hasTokenSent && (
-            <>
-              <CardTitle>Login to your account</CardTitle>
-              <CardDescription>
-                Enter your email below to login to your account
-              </CardDescription>
-            </>
-          )}
+    <div
+      className={cn("flex flex-col gap-6 w-full max-w-sm mx-auto", className)}
+      {...props}
+    >
+      <Card className="border-muted-foreground/10 shadow-lg shadow-black/5">
+        <CardHeader className="space-y-3 pb-2">
+          <div className="flex items-center justify-center">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10">
+              {hasTokenSent ? (
+                <ShieldCheck className="h-5 w-5 text-primary" />
+              ) : (
+                <Lock className="h-5 w-5 text-primary" />
+              )}
+            </div>
+          </div>
+          <div className="text-center space-y-1">
+            <CardTitle className="text-xl font-semibold tracking-tight">
+              {hasTokenSent ? "Two-factor verification" : "Admin sign in"}
+            </CardTitle>
+            <CardDescription className="text-sm">
+              {hasTokenSent
+                ? qrCode
+                  ? "Scan the QR code, then enter the 6-digit code"
+                  : "Enter the code from your authenticator app"
+                : "Sign in with your admin credentials"}
+            </CardDescription>
+          </div>
         </CardHeader>
-        <CardContent>
-          {/* <Button onClick={createAdmin}>Create</Button> */}
-          {/* <Button onClick={seedEwallets}>Create</Button> */}
+
+        <CardContent className="pt-4">
           {!hasTokenSent ? (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleCreateVerification)}>
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-5">
                   <FormField
                     name="email"
                     control={form.control}
                     render={({ field }) => (
-                      <FormItem className="grid gap-3">
-                        <FormLabel>Email</FormLabel>
+                      <FormItem className="grid gap-2">
+                        <FormLabel className="text-sm font-medium">
+                          Email
+                        </FormLabel>
                         <FormControl>
-                          <Input
-                            disabled={pending}
-                            id="email"
-                            type="email"
-                            placeholder="m@example.com"
-                            required
-                            {...field}
-                          />
+                          <div className="relative">
+                            <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              disabled={pending}
+                              id="email"
+                              type="email"
+                              placeholder="you@company.com"
+                              autoComplete="email"
+                              required
+                              className="pl-9"
+                              {...field}
+                            />
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -118,80 +151,112 @@ export function LoginForm({
                     name="password"
                     control={form.control}
                     render={({ field }) => (
-                      <FormItem className="grid gap-3">
+                      <FormItem className="grid gap-2">
                         <div className="flex items-center">
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel className="text-sm font-medium">
+                            Password
+                          </FormLabel>
                           <Link
                             href="#"
-                            className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                            className="ml-auto text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                           >
-                            Forgot your password?
+                            Forgot password?
                           </Link>
                         </div>
-
                         <FormControl>
-                          <Input
-                            disabled={pending}
-                            id="password"
-                            type="password"
-                            placeholder="password"
-                            required
-                            {...field}
-                          />
+                          <div className="relative">
+                            <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              disabled={pending}
+                              id="password"
+                              type={showPassword ? "text" : "password"}
+                              placeholder="••••••••"
+                              autoComplete="current-password"
+                              required
+                              className="pl-9 pr-9"
+                              {...field}
+                            />
+                            <button
+                              type="button"
+                              tabIndex={-1}
+                              onClick={() => setShowPassword((s) => !s)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <div className="flex flex-col gap-3">
-                    <Button type="submit" disabled={pending} className="w-full">
-                      Login
-                    </Button>
-                  </div>
+                  <Button type="submit" disabled={pending} className="w-full">
+                    {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {pending ? "Signing in…" : "Sign in"}
+                  </Button>
                 </div>
               </form>
             </Form>
           ) : (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleVerify)}>
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-5">
+                  {qrCode && (
+                    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-muted-foreground/25 bg-muted/30 p-4">
+                      <img
+                        src={qrCode}
+                        alt="Scan with Google Authenticator"
+                        className="h-36 w-36 rounded-md bg-white p-2 shadow-sm"
+                      />
+                      <p className="text-center text-xs text-muted-foreground leading-relaxed">
+                        Open Google Authenticator, scan this code, then enter
+                        the 6-digit number it shows below.
+                      </p>
+                    </div>
+                  )}
+
                   <FormField
                     name="token"
                     control={form.control}
                     render={({ field }) => (
-                      <FormItem className="grid gap-3">
-                        <FormLabel>Verify Code</FormLabel>
+                      <FormItem className="grid gap-2">
+                        <FormLabel className="text-sm font-medium">
+                          Authentication code
+                        </FormLabel>
                         <FormControl>
-                          <Input
-                            disabled={pending}
-                            id="token"
-                            type="number"
-                            placeholder="Verify Code"
-                            required
-                            {...field}
-                          />
+                          <div className="relative">
+                            <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              disabled={pending}
+                              id="token"
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={6}
+                              autoComplete="one-time-code"
+                              placeholder="123456"
+                              required
+                              className="pl-9 text-center tracking-[0.5em] font-mono"
+                              {...field}
+                            />
+                          </div>
                         </FormControl>
                         <FormMessage />
-                        <FormDescription>
-                          Go to your email address and find the verification
-                          code
+                        <FormDescription className="text-xs">
+                          Enter the current code from your authenticator app.
                         </FormDescription>
                       </FormItem>
                     )}
                   />
-                  <div className="flex flex-col gap-3">
+
+                  <div className="flex flex-col gap-2">
                     <Button disabled={pending} type="submit" className="w-full">
-                      Verify
-                    </Button>
-                    <Button
-                      disabled={pending}
-                      variant={"secondary"}
-                      onClick={() => setTokenSent(false)}
-                      type="button"
-                      className="w-full"
-                    >
-                      Go Back
+                      {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {pending ? "Verifying…" : "Verify and sign in"}
                     </Button>
                   </div>
                 </div>
@@ -200,6 +265,10 @@ export function LoginForm({
           )}
         </CardContent>
       </Card>
+
+      <p className="text-center text-xs text-muted-foreground">
+        Protected by IP restrictions and two-factor authentication.
+      </p>
     </div>
   );
 }

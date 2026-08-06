@@ -1,11 +1,11 @@
 import { INTERNAL_SERVER_ERROR } from "@/error";
 import { db } from "@/lib/db";
-import { Prisma } from "@prisma/client";
+import { Prisma, WalletCategory } from "@prisma/client";
 import { NextRequest } from "next/server";
 
 export const PUT = async (
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) => {
   try {
     const { id } = await params;
@@ -13,10 +13,37 @@ export const PUT = async (
       | "accept"
       | "reject";
     if (change !== "accept" && change !== "reject") {
-      return Response.json({ message: "Invalid Route" });
+      return Response.json({ message: "Invalid Route" }, { status: 400 });
     }
 
     const { message } = await req.json();
+
+    // Fetch the withdraw with its e-wallet so we know whether it's a
+    // mobile-banking withdraw (manual review) or a crypto withdraw.
+    const withdraw = await db.withdraw.findUnique({
+      where: { id },
+      include: { withdrawEWallet: true },
+    });
+
+    if (!withdraw) {
+      return Response.json({ message: "Withdraw not found" }, { status: 404 });
+    }
+
+    // Only crypto withdraws can be manually accepted/rejected by an admin.
+    // Mobile banking (e-wallet) withdraws are view-only here.
+    if (withdraw.withdrawEWallet?.category !== WalletCategory.CRYPTO) {
+      return Response.json(
+        { message: "Only crypto withdraws can be approved or rejected here" },
+        { status: 403 },
+      );
+    }
+
+    if (withdraw.status !== "PENDING") {
+      return Response.json(
+        { message: "This withdraw has already been processed" },
+        { status: 400 },
+      );
+    }
 
     const updateData: Prisma.WithdrawUpdateInput = {};
     if (change == "accept") {
@@ -45,14 +72,15 @@ export const PUT = async (
     }
 
     return Response.json({ message: "Withdraw Updated" });
-  } catch {
+  } catch (error) {
+    console.log({ error });
     return Response.json({ message: INTERNAL_SERVER_ERROR }, { status: 500 });
   }
 };
 
 export const DELETE = async (
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) => {
   try {
     const { id } = await params;

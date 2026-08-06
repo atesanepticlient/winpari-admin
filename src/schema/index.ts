@@ -46,7 +46,7 @@ export const passwordChangeSchema = zod
       }
       return true;
     },
-    { path: ["confirmNewPassword"], message: "Confirm Password did not match" }
+    { path: ["confirmNewPassword"], message: "Confirm Password did not match" },
   );
 
 export const gmailChangeSchema = zod.object({
@@ -129,7 +129,7 @@ export const emailChangeSchema = zod.object({
     .min(1, "Email is required")
     .regex(
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-      "Enter a valid Email"
+      "Enter a valid Email",
     ),
 });
 export type EmailChangeSchema = zod.infer<typeof emailChangeSchema>;
@@ -172,7 +172,7 @@ export const contactSchema = zod
     {
       message: "At least one field must be filled.",
       path: [], // global error
-    }
+    },
   );
 
 export type ContactFormData = zod.infer<typeof contactSchema>;
@@ -204,3 +204,25 @@ export const multipleRecharge = zod.object({
 });
 
 export type MultipleRecharge = zod.infer<typeof multipleRecharge>;
+
+export const bonusSettingUpdateSchema = zod.object({
+  firstPayin: zod.coerce
+    .number()
+    .min(0)
+    .max(100, "Percentage cannot exceed 100%"),
+  firstPayinUpTo: zod.coerce.number().min(0, "Amount must be positive"),
+  referPayin: zod.coerce
+    .number()
+    .min(0)
+    .max(100, "Percentage cannot exceed 100%"),
+  referPayinUpTo: zod.coerce.number().min(0, "Amount must be positive"),
+  inviationCode: zod.coerce
+    .number()
+    .min(0)
+    .max(100, "Percentage cannot exceed 100%"),
+  inviationCodeUpTo: zod.coerce.number().min(0, "Amount must be positive"),
+});
+
+export type BonusSettingUpdateSchema = zod.infer<
+  typeof bonusSettingUpdateSchema
+>;

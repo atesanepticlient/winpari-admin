@@ -12,7 +12,6 @@ export const INTERNAL_SERVER_ERROR = "Somthing went wrong! Try Again";
  */
 export const CREDENTICALS_INCORRECT = "Invalid Credentials";
 
-
 /**
  * wrong or invalid token messsage
  * when tring to verify login
@@ -26,3 +25,7 @@ export const WRONG_TOKEN = "Your Entered wrong Code";
  * @type {string}
  */
 export const TOKEN_EXPIRED = "Code is too Old";
+
+
+export const IP_NOT_WHITELISTED = "Access denied from this IP address";
+export const INVALID_TOTP = "Invalid authentication code";

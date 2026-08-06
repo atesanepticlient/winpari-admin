@@ -9,12 +9,30 @@ import {
 
 const userApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    fetchUsers: builder.query<UsersDataOutput, UsersFetchInput>({
-      query: (params) => ({
-        method: "GET",
-        url: `/api/users?search=${params.search}&status=${params.status}&page=${params.page}&limit=${params.limit}`,
-      }),
-      providesTags: ["user"],
+    fetchUsers: builder.query({
+      query: ({ page = 1, limit = 10, search = "", status = "all" }) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          search,
+          status,
+        });
+        return `/api/users?${params.toString()}`;
+      },
+      // Ensures Redux invalidates/refetches when filter parameters change
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        return `${endpointName}-${JSON.stringify(queryArgs)}`;
+      },
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.payload.users.map(({ id }: { id: string }) => ({
+                type: "Users" as const,
+                id,
+              })),
+              { type: "Users", id: "LIST" },
+            ]
+          : [{ type: "Users", id: "LIST" }],
     }),
 
     fetchUser: builder.query<FetchUserOutput, { id: string }>({

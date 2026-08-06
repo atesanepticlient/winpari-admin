@@ -1,7 +1,9 @@
 "use client";
 
-import { ChevronRight, LayoutDashboard } from "lucide-react";
-import { IoMdCode } from "react-icons/io";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ChevronRight, type LucideIcon } from "lucide-react";
+import { IconType } from "react-icons";
 
 import {
   Collapsible,
@@ -18,7 +20,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import Link from "next/link";
+import { AdminNotificationModal } from "./AdminNotificationModal";
 
 export function NavMain({
   items,
@@ -26,7 +28,7 @@ export function NavMain({
   items: {
     title: string;
     url: string;
-    icon?: React.ElementType;
+    icon?: LucideIcon | IconType;
     isActive?: boolean;
     items?: {
       title: string;
@@ -34,58 +36,86 @@ export function NavMain({
     }[];
   }[];
 }) {
+  const pathname = usePathname();
+
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      <SidebarGroupLabel className="flex py-8 justify-between">
+        Platform
+        <AdminNotificationModal />
+      </SidebarGroupLabel>
       <SidebarMenu>
-        <SidebarMenuItem>
-          <Link href="/dashboard">
-            <SidebarMenuButton tooltip={"Dashboard"}>
-              <LayoutDashboard />
-              <span>Dashboard</span>
-            </SidebarMenuButton>
-          </Link>
-        </SidebarMenuItem>
-        {items.map((item) => (
-          <Collapsible
-            key={item.title}
-            asChild
-            defaultOpen={item.isActive}
-            className="group/collapsible"
-          >
-            <SidebarMenuItem>
-              <CollapsibleTrigger asChild>
-                <SidebarMenuButton tooltip={item.title}>
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                  <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenuSub>
-                  {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton asChild>
-                        <a href={subItem.url}>
-                          <span>{subItem.title}</span>
-                        </a>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
-                </SidebarMenuSub>
-              </CollapsibleContent>
-            </SidebarMenuItem>
-          </Collapsible>
-        ))}
+        {items.map((item) => {
+          const hasSubItems = item.items && item.items.length > 0;
 
-        <SidebarMenuItem>
-          <Link href="/game-api">
-            <SidebarMenuButton tooltip={"Dashboard"}>
-              <IoMdCode />
-              <span>API</span>
-            </SidebarMenuButton>
-          </Link>
-        </SidebarMenuItem>
+          // 1. Standalone Single Link (e.g., Dashboard)
+          if (!hasSubItems) {
+            const isSingleActive =
+              item.url !== "#" &&
+              (pathname === item.url || pathname.startsWith(`${item.url}/`));
+
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  isActive={isSingleActive}
+                >
+                  <Link href={item.url}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          }
+
+          // 2. Dropdown Category Link (e.g., Payment, Users, Setting)
+          const isParentActive = item.items?.some(
+            (sub) => pathname === sub.url || pathname.startsWith(`${sub.url}/`),
+          );
+
+          return (
+            <Collapsible
+              key={item.title}
+              asChild
+              defaultOpen={isParentActive || item.isActive}
+              className="group/collapsible"
+            >
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    isActive={isParentActive}
+                  >
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {item.items?.map((subItem) => {
+                      const isSubActive =
+                        pathname === subItem.url ||
+                        pathname.startsWith(`${subItem.url}/`);
+
+                      return (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isSubActive}>
+                            <Link href={subItem.url}>
+                              <span>{subItem.title}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          );
+        })}
       </SidebarMenu>
     </SidebarGroup>
   );

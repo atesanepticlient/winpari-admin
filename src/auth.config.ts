@@ -2,7 +2,13 @@ import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import { CREDENTICALS_INCORRECT } from "./error";
+import {
+  CREDENTICALS_INCORRECT,
+  IP_NOT_WHITELISTED,
+  INVALID_TOTP,
+} from "./error";
+import { getClientIp, isIpWhitelisted } from "./lib/ip";
+import { verifyTOTPToken } from "./lib/totp";
 
 export const config = {
   runtime: "nodejs",
@@ -16,33 +22,31 @@ export default {
       credentials: {
         email: { name: "email", type: "email" },
         password: { name: "password", type: "password" },
+        token: { name: "token", type: "text" },
       },
 
       async authorize(credentials) {
-        const user: string = (credentials!.email as string) || "";
-        const password: string = (credentials!.password as string) || "";
+        const { email, password, token } = credentials;
 
-        if (!user || !password) {
-          throw new Error(CREDENTICALS_INCORRECT);
-        }
-
-        const account = await db.admin.findFirst({
-          where: {},
+        const admin = await db.admin.findUnique({
+          where: { email: email as string },
         });
 
-        if (!account) {
-          throw new Error(CREDENTICALS_INCORRECT);
+        if (!admin || !admin.twoFactorSecret) {
+          return null;
         }
 
-        const passwordIsMatch = await bcrypt.compare(
-          password,
-          account.password
+        // Verify TOTP Token
+        const isValidToken = await verifyTOTPToken(
+          token as string,
+          admin.twoFactorSecret,
         );
 
-        if (!passwordIsMatch) {
-          throw new Error(CREDENTICALS_INCORRECT);
+        if (!isValidToken) {
+          throw new Error("Invalid 2FA authentication code.");
         }
-        return account;
+
+        return admin;
       },
     }),
   ],

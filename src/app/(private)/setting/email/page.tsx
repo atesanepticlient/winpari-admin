@@ -1,188 +1,185 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { emailChangeSchema, EmailChangeSchema } from "@/schema";
+
+import { adminPasswordChangeSchema, PasswordChangeSchema } from "@/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FaKey } from "react-icons/fa6";
-import { FaArrowLeftLong } from "react-icons/fa6";
+import { FaKey, FaArrowLeftLong } from "react-icons/fa6";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { emailChange, sentVerificationMail } from "@/action/account";
+import { passwordChange } from "@/action/account";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import useCurrentUser from "@/hooks/useCurrentUser";
-import { FaCheck } from "react-icons/fa";
 
-const EmailChangeForm = () => {
-  const admin = useCurrentUser();
+const PasswordChangeForm = () => {
+  const router = useRouter();
   const [pending, startTr] = useTransition();
-  const [emailSent, setEmailSend] = useState(false);
 
-  const form = useForm<EmailChangeSchema>({
-    resolver: zodResolver(emailChangeSchema),
+  // Visibility Toggles
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+
+  const form = useForm<PasswordChangeSchema>({
+    resolver: zodResolver(adminPasswordChangeSchema),
     defaultValues: {
-      token: "",
-      newEmail: "",
+      currentPassword: "",
+      newPassword: "",
     },
   });
 
-  const onSubmit = (data: EmailChangeSchema) => {
-    const asyncAction = async () => {
-      const response = await emailChange(data);
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      return response.success;
-    };
-
+  const onSubmit = (data: PasswordChangeSchema) => {
     startTr(() => {
-      toast.promise(asyncAction(), {
-        loading: "Changing...",
-        success: () => "Email Changed",
-        error: (error: any) => {
-          return `${error.message}`;
-        },
-      });
-    });
-  };
-
-  const handleSendVerificationCode = () => {
-    startTr(() => {
-      sentVerificationMail().then((res) => {
-        if (res.success) {
-          setEmailSend(true);
-        } else if (res.error) {
-          toast.error(res.error);
+      const asyncAction = async () => {
+        const response = await passwordChange(data);
+        if (response?.error) {
+          throw new Error(response.error);
         }
+
+        form.reset();
+        router.refresh();
+        router.push("/account");
+        return response?.success || "Password changed successfully";
+      };
+
+      toast.promise(asyncAction(), {
+        loading: "Updating password...",
+        success: (msg) => `${msg}`,
+        error: (err: any) => `${err.message || "Failed to update password"}`,
       });
     });
   };
-
-  const route = useRouter();
 
   return (
-    <div>
-      <div className=" w-full h-[80vh] flex justify-center items-center bg-background">
-        <div className="relative w-[320px] md:w-[370px] lg:w-[420px] mx-auto mt-20 p-8 shadow-xl rounded-2xl border space-y-6">
-          <h1 className="text-2xl font-bold text-center">
-            <FaKey className="text-white w-7 h-7 mx-auto" /> Change Email
-          </h1>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                name="email"
-                render={() => (
-                  <FormItem>
-                    <Label htmlFor="email">Primary Email</Label>
-                    <div className="flex items-center gap-1">
-                      <FormControl>
-                        <Input
-                          value={admin!.email}
-                          disabled
-                          readOnly
-                          id="email"
-                          type="email"
-                        />
-                      </FormControl>
-                      <Button
-                        variant={"secondary"}
-                        disabled={pending || emailSent}
-                        onClick={() => handleSendVerificationCode()}
-                      >
-                        {emailSent ? "Sent" : "Send"}
-                      </Button>
-                    </div>
-                    <FormDescription>
-                      {emailSent ? (
-                        <span className="flex items-center gap-1">
-                          <FaCheck className="w-4 h-4 text-white" />
-                          Verification Code was sent to your Primary Email
-                        </span>
-                      ) : (
-                        "A verification E-mail will be sent to your Primary E-mail with a Verification Code"
-                      )}
-                    </FormDescription>
-                  </FormItem>
-                )}
-              />
+    <div className="w-full min-h-[80vh] flex justify-center items-center bg-background px-4">
+      <div className="relative w-full max-w-md mx-auto p-6 md:p-8 shadow-xl rounded-2xl border bg-card text-card-foreground space-y-6">
+        {/* Back Button */}
+        <Button
+          className="absolute -top-12 left-0 sm:-left-4"
+          variant="outline"
+          size="icon"
+          aria-label="Back"
+          onClick={() => router.back()}
+        >
+          <FaArrowLeftLong className="w-4 h-4" />
+        </Button>
 
-              <FormField
-                control={form.control}
-                name="token"
-                render={({ field }) => (
-                  <FormItem>
-                    <Label htmlFor="token">Verification Code</Label>
-                    <FormControl>
-                      <Input
-                        disabled={pending}
-                        readOnly={!emailSent}
-                        id="token"
-                        type="text"
-                        placeholder="Code"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="newEmail"
-                render={({ field }) => (
-                  <FormItem>
-                    <Label htmlFor="newEmail">New Email</Label>
-                    <FormControl>
-                      <Input
-                        disabled={pending}
-                        readOnly={!emailSent}
-                        id="newEmail"
-                        type="email"
-                        placeholder="Enter a new email"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button
-                disabled={pending || !emailSent}
-                type="submit"
-                variant={"secondary"}
-                className="w-full text-white cursor-pointer"
-              >
-                Change
-              </Button>
-            </form>
-          </Form>
-
-          <Button
-            className="absolute -top-15 -left-15"
-            variant={"outline"}
-            aria-label="back button"
-            title="back button"
-            onClick={() => route.back()}
-          >
-            <FaArrowLeftLong className="w-5 h-5 text-white" />
-          </Button>
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-1">
+            <FaKey className="w-5 h-5" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">Change Password</h1>
+          <p className="text-xs text-muted-foreground">
+            Enter your current password to set up a new password.
+          </p>
         </div>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            {/* Current Password Field */}
+            <FormField
+              control={form.control}
+              name="currentPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <FormControl>
+                    <div className="relative">
+                      <Input
+                        disabled={pending}
+                        id="currentPassword"
+                        type={showCurrentPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        autoComplete="current-password"
+                        className="pr-10"
+                        {...field}
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => setShowCurrentPassword((prev) => !prev)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showCurrentPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* New Password Field */}
+            <FormField
+              control={form.control}
+              name="newPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <FormControl>
+                    <div className="relative">
+                      <Input
+                        disabled={pending}
+                        id="newPassword"
+                        type={showNewPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        className="pr-10"
+                        {...field}
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => setShowNewPassword((prev) => !prev)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showNewPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Submit Button */}
+            <Button
+              disabled={pending}
+              type="submit"
+              className="w-full font-semibold cursor-pointer"
+            >
+              {pending ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Updating...
+                </span>
+              ) : (
+                "Change Password"
+              )}
+            </Button>
+          </form>
+        </Form>
       </div>
     </div>
   );
 };
 
-export default EmailChangeForm;
+export default PasswordChangeForm;

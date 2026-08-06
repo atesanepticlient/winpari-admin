@@ -1,35 +1,62 @@
-"use server";
+"use server"; // <-- Ensure "use" is included here
 
-import { db } from "@/lib/db"; // adjust path as needed
-import { siteUpdateSchema, SiteUpdateSchema } from "@/schema";
+import { db } from "@/lib/db";
+import { bonusSettingUpdateSchema, BonusSettingUpdateSchema } from "@/schema";
 
-export async function updateSiteAction(formData: SiteUpdateSchema) {
-  const result = siteUpdateSchema.safeParse(formData);
-
-  if (!result.success) {
-    return {
-      success: false,
-      error: result.error.format(),
-    };
-  }
-
-  const { ...data } = result.data;
-  console.log({data})
-  const site = await db.site.findFirst({ where: {} });
-
-  if (!site) return { success: false, error: "Please Seed a site first" };
-
+export const updateBonusSettingAction = async (
+  data: BonusSettingUpdateSchema,
+) => {
   try {
-    await db.site.update({
-      where: { id: site.id },
-      data,
+    // 1. Validate incoming data
+    const validatedFields = bonusSettingUpdateSchema.safeParse(data);
+
+    if (!validatedFields.success) {
+      return {
+        error: "Invalid fields provided.",
+        details: validatedFields.error.flatten().fieldErrors,
+      };
+    }
+
+    const {
+      firstPayin,
+      firstPayinUpTo,
+      referPayin,
+      referPayinUpTo,
+      inviationCode,
+      inviationCodeUpTo,
+    } = validatedFields.data;
+
+    // 2. Upsert the global bonus settings
+    const updatedBonusSetting = await db.bonusSetting.upsert({
+      where: { id: "global" },
+      update: {
+        firstPayin,
+        firstPayinUpTo,
+        referPayin,
+        referPayinUpTo,
+        inviationCode,
+        inviationCodeUpTo,
+      },
+      create: {
+        id: "global",
+        firstPayin,
+        firstPayinUpTo,
+        referPayin,
+        referPayinUpTo,
+        inviationCode,
+        inviationCodeUpTo,
+      },
     });
 
-    return { success: true };
-  } catch {
     return {
-      success: false,
-      error: { error: "Failed to update contact info." },
+      success: true,
+      message: "Bonus settings updated successfully.",
+      payload: updatedBonusSetting,
+    };
+  } catch (error) {
+    console.error("[UPDATE_BONUS_SETTING_ERROR]", error);
+    return {
+      error: "An error occurred while updating bonus settings.",
     };
   }
-}
+};

@@ -74,7 +74,7 @@ const DepositsPage = () => {
         wallets.find(
           (wallet) =>
             deposits[i].ewallet.walletName.toLowerCase() ==
-            wallet.walletName.toLowerCase()
+            wallet.walletName.toLowerCase(),
         )
       ) {
         continue;
@@ -95,13 +95,19 @@ const DepositsPage = () => {
 
   const handleArroval = (
     depositId: string,
-    actionType: "accept" | "reject"
+    actionType: "accept" | "reject",
   ) => {
     const asyncAction = async () => {
       const response = await arrovalAPi({
         change: actionType,
         id: depositId,
         message: message,
+        // Only meaningful on accept + non-USD wallet; the API falls back to
+        // the global DollerRate when this is empty/undefined.
+        customRate:
+          actionType === "accept" && customRate.trim() !== ""
+            ? customRate
+            : undefined,
       }).unwrap();
       return response.message;
     };
@@ -125,6 +131,7 @@ const DepositsPage = () => {
 
   const [selectedDeposit, setSelectedDeposit] = useState<any | null>(null);
   const [message, setMessage] = useState(`   `);
+  const [customRate, setCustomRate] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined;
@@ -135,10 +142,28 @@ const DepositsPage = () => {
   });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
+  // Only crypto deposits can be manually approved/rejected by an admin —
+  // mobile banking (e-wallet) deposits are view-only in this modal.
+  const isCryptoDeposit = selectedDeposit?.ewallet?.category === "CRYPTO";
+  const isActionable = isCryptoDeposit && selectedDeposit?.status === "PENDING";
+
+  // Crypto deposits are in USD; if the user's wallet isn't USD, the accept
+  // flow converts using the global rate unless the admin overrides it here.
+  const walletCurrency = (
+    selectedDeposit?.user?.wallet?.currencyCode || "BDT"
+  ).toUpperCase();
+  const needsConversion = isActionable && walletCurrency !== "USD";
+
   const handleViewDetails = (deposit: any) => {
     setSelectedDeposit(deposit);
     setIsModalOpen(true);
   };
+
+  // Crypto deposits are denominated in USD; mobile banking deposits are in
+  // the site's local currency (৳). The amount display was hardcoded to ৳
+  // everywhere, which mislabeled crypto amounts as taka.
+  const getAmountSymbol = (deposit: any) =>
+    deposit?.ewallet?.category === "CRYPTO" ? "$" : "৳";
 
   const renderStatusBadge = (status: any) => {
     switch (status) {
@@ -167,8 +192,9 @@ const DepositsPage = () => {
   useEffect(() => {
     if (selectedDeposit) {
       setMessage(
-        `${selectedDeposit.amount} Your Deposit was successfully added`
+        `${selectedDeposit.amount} Your Deposit was successfully added`,
       );
+      setCustomRate("");
     }
   }, [selectedDeposit]);
 
@@ -184,6 +210,7 @@ const DepositsPage = () => {
                 <TableHead>Player ID</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Payment Gateway</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -194,7 +221,10 @@ const DepositsPage = () => {
                 <TableRow key={deposit.id} className="">
                   <TableCell className="font-medium ">{deposit.id}</TableCell>
                   <TableCell>{deposit.user.playerId}</TableCell>
-                  <TableCell>৳{+deposit.amount}</TableCell>
+                  <TableCell>
+                    {getAmountSymbol(deposit)}
+                    {+deposit.amount}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center capitalize">
                       <img
@@ -204,6 +234,13 @@ const DepositsPage = () => {
                       />
                       {deposit.ewallet.walletName}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {deposit.ewallet.category === "CRYPTO" ? (
+                      <Badge variant="outline">Crypto</Badge>
+                    ) : (
+                      <Badge variant="secondary">Mobile Banking</Badge>
+                    )}
                   </TableCell>
                   <TableCell>{moment(deposit.createdAt).calendar()}</TableCell>
                   <TableCell>{renderStatusBadge(deposit.status)}</TableCell>
@@ -339,7 +376,7 @@ const DepositsPage = () => {
                                   range as {
                                     from: Date | undefined;
                                     to: Date | undefined;
-                                  }
+                                  },
                                 );
                                 if (range?.to) setIsCalendarOpen(false);
                               }}
@@ -437,7 +474,7 @@ const DepositsPage = () => {
                             onChange={(e) =>
                               handleChangeFilterValues(
                                 "minAmount",
-                                +e.target.value
+                                +e.target.value,
                               )
                             }
                             className="text-sm"
@@ -450,7 +487,7 @@ const DepositsPage = () => {
                             onChange={(e) =>
                               handleChangeFilterValues(
                                 "maxAmount",
-                                +e.target.value
+                                +e.target.value,
                               )
                             }
                             className="text-sm"
@@ -504,7 +541,8 @@ const DepositsPage = () => {
                               Amount:
                             </span>
                             <span className="text-sm font-medium">
-                              ৳{+selectedDeposit.amount}
+                              {getAmountSymbol(selectedDeposit)}
+                              {+selectedDeposit.amount}
                             </span>
                           </div>
                           <div className="flex justify-between">
@@ -548,7 +586,9 @@ const DepositsPage = () => {
                             <span className="text-sm text-gray-500">
                               Wallet Type
                             </span>
-                            <span className="text-sm font-medium">Ewallet</span>
+                            <span className="text-sm font-medium">
+                              {isCryptoDeposit ? "Crypto" : "Mobile Banking"}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-gray-500">
@@ -600,6 +640,14 @@ const DepositsPage = () => {
                               {selectedDeposit.user.phone}
                             </span>
                           </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-500">
+                              Wallet Currency:
+                            </span>
+                            <span className="text-sm font-medium">
+                              {walletCurrency}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
@@ -608,11 +656,36 @@ const DepositsPage = () => {
                           Notes
                         </h3>
                         <div className="p-4 rounded-lg bg-input/30">
-                          <p className="text-sm">Deposits</p>
+                          <p className="text-sm">
+                            {isCryptoDeposit
+                              ? "Deposits"
+                              : "Mobile banking deposits are processed automatically and shown here for reference only."}
+                          </p>
                         </div>
                       </div>
 
-                      {selectedDeposit.status === "PENDING" && (
+                      {needsConversion && (
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-500 mb-2">
+                            Conversion Rate ({walletCurrency} per 1 USD)
+                          </h3>
+                          <Input
+                            disabled={arrovalActionLoading}
+                            type="number"
+                            placeholder="Leave blank to use the global rate"
+                            value={customRate}
+                            onChange={(e) => setCustomRate(e.target.value)}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            This deposit is in USD. On approval it will be
+                            converted to the user&apos;s {walletCurrency} wallet
+                            using this rate, or the site&apos;s global rate if
+                            left blank.
+                          </p>
+                        </div>
+                      )}
+
+                      {isActionable && (
                         <div>
                           <h3 className="text-sm font-medium text-gray-500 mb-2">
                             Message to User
@@ -632,7 +705,7 @@ const DepositsPage = () => {
                 )}
 
                 <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">
-                  {selectedDeposit?.status === "PENDING" ? (
+                  {isActionable ? (
                     <>
                       <Button
                         disabled={arrovalActionLoading}

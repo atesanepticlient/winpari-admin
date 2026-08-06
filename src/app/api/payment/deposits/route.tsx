@@ -19,13 +19,15 @@ export const GET = async (req: NextRequest) => {
 
     const where: Prisma.DepositWhereInput = {};
 
+    // Widened to match what the UI actually promises ("TRX ID, User ID...").
+    // Previously this only matched user.phone, so searching by deposit id,
+    // player id, or email silently returned nothing.
     if (search) {
       where.OR = [
-        {
-          user: {
-            phone: { contains: search, mode: "insensitive" },
-          },
-        },
+        { id: { contains: search, mode: "insensitive" } },
+        { user: { phone: { contains: search, mode: "insensitive" } } },
+        { user: { playerId: { contains: search, mode: "insensitive" } } },
+        { user: { email: { contains: search, mode: "insensitive" } } },
       ];
     }
 
@@ -36,8 +38,13 @@ export const GET = async (req: NextRequest) => {
       };
     }
 
+    // BUG FIX: `where.ewallet!.walletName = gateway` assigned a property to
+    // `undefined` at runtime (the `!` only silences TypeScript) and threw,
+    // which the outer try/catch turned into a silent 500 any time a gateway
+    // filter was selected. `ewallet` is a required relation on Deposit, so
+    // Prisma accepts the fields object directly here.
     if (gateway) {
-      where.ewallet!.walletName = gateway;
+      where.ewallet = { walletName: gateway };
     }
 
     if (minAmount || maxAmount) {
@@ -59,15 +66,18 @@ export const GET = async (req: NextRequest) => {
       skip: limit * (page - 1),
     });
 
-    const totalFound = await db.deposit.count({
-      where: {},
-    });
+    // BUG FIX: was `count({ where: {} })`, i.e. always the total across ALL
+    // deposits regardless of filters. That made "Showing X of Y" and the
+    // pagination buttons wrong any time a filter was active. Now counts
+    // against the same `where` used for the page of results.
+    const totalFound = await db.deposit.count({ where });
 
     return Response.json(
       { payload: { deposits, totalFound } },
-      { status: 200 }
+      { status: 200 },
     );
-  } catch {
+  } catch (error) {
+    console.log({ error });
     return Response.json({ message: INTERNAL_SERVER_ERROR }, { status: 500 });
   }
 };

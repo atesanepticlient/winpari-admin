@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { CircleDollarSign } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { CircleDollarSign, LayoutDashboard } from "lucide-react";
 import {
   MdOutlineSupportAgent,
   MdBusinessCenter,
@@ -21,134 +22,142 @@ import {
 
 import useCurrentUser from "@/hooks/useCurrentUser";
 
-// This is sample data.
-const data = {
-  user: {
-    name: "San Bin Hoque",
-    email: "epti060@gmail.com",
-    avatar: "/avatars/shadcn.jpg",
+const rawNavMain = [
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: LayoutDashboard,
   },
-  shortNavigation: [],
-  navMain: [
-    {
-      title: "Payment",
-      url: "#",
-      icon: CircleDollarSign,
-      isActive: true,
-      items: [
-        {
-          title: "Deposit",
-          url: "/payment/deposits",
-        },
-        {
-          title: "Withdraws",
-          url: "/payment/withdraws",
-        },
-        {
-          title: "Add Banking",
-          url: "/payment/banking",
-        },
-      ],
-    },
-    {
-      title: "Agent",
-      url: "#",
-      icon: MdOutlineSupportAgent,
-      items: [
-        {
-          title: "Explor",
-          url: "/agents/explor",
-        },
-
-        {
-          title: "Pending",
-          url: "/agents/pending",
-        },
-        {
-          title: "Payouts",
-          url: "/agents/payouts",
-        },
-      ],
-    },
-    {
-      title: "Users",
-      url: "#",
-      icon: FaUsers,
-      items: [
-        {
-          title: "Exlpor",
-          url: "/users/explor",
-        },
-      ],
-    },
-    {
-      title: "Site Center",
-      url: "#",
-      icon: MdBusinessCenter,
-      items: [
-        // {
-        //   title: "Features",
-        //   url: "#",
-        // },
-        {
-          title: "Contact",
-          url: "/contact",
-        },
-        {
-          title: "Setting",
-          url: "/site",
-        },
-      ],
-    },
-    {
-      title: "Recharge",
-      url: "#",
-      icon: MdOutlineAccountBalanceWallet,
-      items: [
-        {
-          title: "Users",
-          url: "/recharge/users",
-        },
-        {
-          title: "Agents",
-          url: "/recharge/agents",
-        },
-      ],
-    },
-    {
-      title: "Setting",
-      url: "#",
-      icon: FaGear,
-      items: [
-        {
-          title: "Account",
-          url: "/setting/account",
-        },
-        {
-          title: "Email",
-          url: "/setting/email",
-        },
-        {
-          title: "Password",
-          url: "/setting/password",
-        },
-      ],
-    },
-  ],
-};
+  {
+    title: "Payment",
+    url: "#",
+    icon: CircleDollarSign,
+    items: [
+      {
+        title: "Deposit",
+        url: "/payment/deposits",
+      },
+      {
+        title: "Withdraws",
+        url: "/payment/withdraws",
+      },
+      {
+        title: "Add Banking",
+        url: "/payment/banking",
+      },
+    ],
+  },
+  {
+    title: "Agent",
+    url: "#",
+    icon: MdOutlineSupportAgent,
+    items: [
+      {
+        title: "Explore",
+        url: "/agents/explor",
+      },
+      {
+        title: "Pending",
+        url: "/agents/pending",
+      },
+      {
+        title: "Payouts",
+        url: "/agents/payouts",
+      },
+    ],
+  },
+  {
+    title: "Users",
+    url: "#",
+    icon: FaUsers,
+    items: [
+      {
+        title: "Explore",
+        url: "/users/explor",
+      },
+    ],
+  },
+  {
+    title: "Site Center",
+    url: "#",
+    icon: MdBusinessCenter,
+    items: [
+      {
+        title: "Contact",
+        url: "/contact",
+      },
+      {
+        title: "Setting",
+        url: "/site",
+      },
+    ],
+  },
+  {
+    title: "Recharge",
+    url: "#",
+    icon: MdOutlineAccountBalanceWallet,
+    items: [
+      {
+        title: "Users",
+        url: "/recharge/users",
+      },
+    ],
+  },
+  {
+    title: "Setting",
+    url: "#",
+    icon: FaGear,
+    items: [
+      {
+        title: "Account",
+        url: "/setting/account",
+      },
+      {
+        title: "Email",
+        url: "/setting/email",
+      },
+      {
+        title: "Password",
+        url: "/setting/password",
+      },
+    ],
+  },
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const admin = useCurrentUser();
+  const pathname = usePathname();
+
+  const navMainWithActiveState = React.useMemo(() => {
+    return rawNavMain.map((item) => {
+      // Check if sub-item matches path
+      const isSubItemActive = item.items?.some(
+        (subItem) =>
+          pathname === subItem.url || pathname.startsWith(`${subItem.url}/`),
+      );
+
+      // Check if direct top-level link matches path (e.g. /dashboard)
+      const isMainActive =
+        item.url !== "#" &&
+        (pathname === item.url || pathname.startsWith(`${item.url}/`));
+
+      return {
+        ...item,
+        isActive: isMainActive || isSubItemActive,
+      };
+    });
+  }, [pathname]);
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMainWithActiveState} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser
           user={{
-            name: admin!.fullName,
-            email: admin!.email,
+            name: admin?.fullName ?? "Admin",
+            email: admin?.email ?? "",
             avatar: "/avatars/shadcn.jpg",
           }}
         />

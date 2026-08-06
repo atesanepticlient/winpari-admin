@@ -3,7 +3,7 @@ import { apiSlice } from "./apiSlice";
 
 const agentApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    fetchSite: builder.query<{ payload: Prisma.SiteGetPayload<object> }, void>({
+    fetchSite: builder.query<{ payload: any }, void>({
       query: () => ({
         url: "/api/site",
         method: "GET",
