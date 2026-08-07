@@ -1,24 +1,17 @@
 "use server";
 
 import { findAdmin } from "@/data/admin";
-import {
-  CREDENTICALS_INCORRECT,
-  INTERNAL_SERVER_ERROR,
-
-} from "@/error";
+import { CREDENTICALS_INCORRECT, INTERNAL_SERVER_ERROR } from "@/error";
 import { createAdminVerificationToken } from "@/helpers/token";
 import { db } from "@/lib/db";
 import { sendAdminVerificationTokenMail } from "@/lib/email";
 import { generateOTP } from "@/lib/helpers";
-import {
-  passwordChangeSchema,
-  passwordMatcherSchema,
-} from "@/schema";
+import { passwordChangeSchema, passwordMatcherSchema } from "../../schema";
 import bcrypt from "bcryptjs";
 import zod from "zod";
 
 export const matchCurrentPassword = async (
-  data: zod.infer<typeof passwordMatcherSchema>
+  data: zod.infer<typeof passwordMatcherSchema>,
 ) => {
   try {
     const { currentPassword } = data;
@@ -27,7 +20,7 @@ export const matchCurrentPassword = async (
 
     const isPasswordMatch = await bcrypt.compare(
       currentPassword,
-      admin!.password
+      admin!.password,
     );
 
     if (!isPasswordMatch) {
@@ -38,7 +31,7 @@ export const matchCurrentPassword = async (
 
     const hasEmailSent = await sendAdminVerificationTokenMail(
       admin!.twoFAEmail,
-      token
+      token,
     );
 
     if (!hasEmailSent) {
@@ -52,7 +45,7 @@ export const matchCurrentPassword = async (
 };
 
 export const changePassword = async (
-  data: zod.infer<typeof passwordChangeSchema>
+  data: zod.infer<typeof passwordChangeSchema>,
 ) => {
   try {
     const { newPassword } = data;

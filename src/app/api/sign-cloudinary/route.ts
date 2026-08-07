@@ -1,7 +1,7 @@
 import cloudinary from "cloudinary";
 import { NextRequest } from "next/server";
 
-const cloudinaryConfig = cloudinary.v2.config({
+cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_NAME,
   api_key: process.env.CLOUDINARY_API,
   api_secret: process.env.CLOUDINARY_SECRET,
@@ -9,10 +9,30 @@ const cloudinaryConfig = cloudinary.v2.config({
 
 export const POST = async (req: NextRequest) => {
   try {
+    if (
+      !process.env.CLOUDINARY_NAME ||
+      !process.env.CLOUDINARY_API ||
+      !process.env.CLOUDINARY_SECRET
+    ) {
+      console.error("Missing Cloudinary env vars");
+      return Response.json(
+        { message: "Server misconfigured", success: false },
+        { status: 500 },
+      );
+    }
+
     const { timestamp } = await req.json();
+
+    if (!timestamp) {
+      return Response.json(
+        { message: "Missing timestamp", success: false },
+        { status: 400 },
+      );
+    }
+
     const signature = cloudinary.v2.utils.api_sign_request(
       { timestamp },
-      process.env.CLOUDINARY_SECRET!
+      process.env.CLOUDINARY_SECRET,
     );
 
     return Response.json(
@@ -20,18 +40,19 @@ export const POST = async (req: NextRequest) => {
         payload: {
           signature,
           timestamp,
-          cloud_name: cloudinaryConfig.cloud_name,
-          api_key: cloudinaryConfig.api_key,
+          cloud_name: process.env.CLOUDINARY_NAME,
+          api_key: process.env.CLOUDINARY_API,
         },
-        succcess: true,
+        success: true,
         message: "Signed",
       },
-      { status: 201 }
+      { status: 201 },
     );
-  } catch {
+  } catch (error) {
+    console.error("Sign-cloudinary error:", error);
     return Response.json(
-      { message: "Unknown Error Try agin", success: false },
-      { status: 500 }
+      { message: "Unknown error, please try again", success: false },
+      { status: 500 },
     );
   }
 };
@@ -39,27 +60,33 @@ export const POST = async (req: NextRequest) => {
 export const DELETE = async (req: NextRequest) => {
   try {
     const { publicId } = await req.json();
+
     if (!publicId) {
       return Response.json(
         { message: "Missing publicId", success: false },
-        { status: 404 }
+        { status: 400 }, // was 404 — this is a bad request, not "not found"
       );
     }
+
     const result = await cloudinary.v2.uploader.destroy(publicId);
+
     if (result.result !== "ok") {
+      console.error("Cloudinary destroy failed:", result);
       return Response.json(
-        { message: "Please Try agin", success: false },
-        { status: 500 }
+        { message: "Please try again", success: false },
+        { status: 500 },
       );
     }
+
     return Response.json(
       { message: "Image deleted successfully", success: true },
-      { status: 200 }
+      { status: 200 },
     );
-  } catch {
+  } catch (error) {
+    console.error("Cloudinary delete error:", error);
     return Response.json(
-      { message: "Unknown Error Try agin", success: false },
-      { status: 500 }
+      { message: "Unknown error, please try again", success: false },
+      { status: 500 },
     );
   }
 };

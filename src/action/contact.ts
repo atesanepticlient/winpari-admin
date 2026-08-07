@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db"; // adjust path as needed
-import { contactSchema } from "@/schema";
+import { contactSchema } from "../../schema";
 
 export async function updateContactAction(formData: unknown) {
   const result = contactSchema.safeParse(formData);

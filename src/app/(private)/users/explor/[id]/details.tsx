@@ -66,7 +66,10 @@ import {
   useCreateMessageMutation,
   useFetchUserQuery,
 } from "@/lib/features/userApiSlice";
-import { createMessageSchema, CreateMessageSchema } from "@/schema";
+import {
+  createMessageSchema,
+  CreateMessageSchema,
+} from "../../../../../../schema";
 import BettingHistoryModal from "../../BettingHistoryModal";
 
 // Currency Symbol Helper Mapping

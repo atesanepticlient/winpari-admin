@@ -6,7 +6,7 @@ import { createAdminVerificationToken } from "@/helpers/token";
 import { db } from "@/lib/db";
 import { sendAdminVerificationTokenMail } from "@/lib/email";
 import { generateOTP } from "@/lib/helpers";
-import { gmailChangeSchema, VerificationCodeSchema } from "@/schema";
+import { gmailChangeSchema, VerificationCodeSchema } from "../../schema";
 import zod from "zod";
 
 export const sendVerificationEmail = async () => {
@@ -18,7 +18,7 @@ export const sendVerificationEmail = async () => {
 
     const hasEmailSent = await sendAdminVerificationTokenMail(
       admin!.twoFAEmail,
-      token
+      token,
     );
 
     if (!hasEmailSent) {
@@ -32,7 +32,7 @@ export const sendVerificationEmail = async () => {
 };
 
 export const changeEmail = async (
-  data: zod.infer<typeof gmailChangeSchema>
+  data: zod.infer<typeof gmailChangeSchema>,
 ) => {
   try {
     const { newGmail } = data;
@@ -55,7 +55,7 @@ export const changeEmail = async (
 };
 
 export const verify2FAEmail = async (
-  data: zod.infer<typeof VerificationCodeSchema>
+  data: zod.infer<typeof VerificationCodeSchema>,
 ) => {
   try {
     const admin = await findAdmin();
@@ -105,7 +105,7 @@ export const send2FAVerificationEmail = async () => {
 
     const hasEmailSent = await sendAdminVerificationTokenMail(
       admin!.email,
-      token
+      token,
     );
 
     if (!hasEmailSent) {

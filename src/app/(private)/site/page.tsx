@@ -28,7 +28,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useFetchSiteQuery } from "@/lib/features/siteApiSlice";
-import { bonusSettingUpdateSchema, BonusSettingUpdateSchema } from "@/schema";
+import {
+  bonusSettingUpdateSchema,
+  BonusSettingUpdateSchema,
+} from "../../../../schema";
 import { updateBonusSettingAction } from "@/action/site";
 
 const SiteSettings = () => {

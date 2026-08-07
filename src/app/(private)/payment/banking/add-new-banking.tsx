@@ -28,7 +28,7 @@ import {
 import { useForm } from "react-hook-form";
 
 import zod from "zod";
-import { addBankingSchema } from "@/schema";
+import { addBankingSchema } from "../../../../../schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { addBanking } from "@/action/banking";
 import { toast } from "sonner";

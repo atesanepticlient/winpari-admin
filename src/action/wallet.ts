@@ -9,12 +9,12 @@ import zod from "zod";
 import {
   eWalletWithdrawInformationUpdateSchema,
   eWalletDepositInformationUpdateSchema,
-} from "@/schema";
+} from "../../schema";
 
 export const updateEWallet = async (
   isRecommended: boolean,
   isActive: boolean,
-  eWalletId: string
+  eWalletId: string,
 ) => {
   try {
     const adminWallet: any = await db.adEWallet.findUnique({
@@ -75,7 +75,7 @@ export const updateEWallet = async (
 
 export const updateEWalletDeposit = async (
   data: zod.infer<typeof eWalletDepositInformationUpdateSchema>,
-  eWalletId: string
+  eWalletId: string,
 ) => {
   try {
     const adminWallet = await db.adEWallet.findUnique({ where: { eWalletId } });
@@ -120,7 +120,7 @@ export const updateEWalletDeposit = async (
 
 export const updateEWalletWithdraw = async (
   data: zod.infer<typeof eWalletWithdrawInformationUpdateSchema>,
-  eWalletId: string
+  eWalletId: string,
 ) => {
   try {
     const adminWallet = await db.adEWallet.findUnique({ where: { eWalletId } });

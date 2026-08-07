@@ -9,7 +9,7 @@ import {
 import { db } from "@/lib/db";
 import { generateTOTPSecret, generateQRCode } from "@/lib/totp";
 import { getClientIp, isIpWhitelisted } from "@/lib/ip";
-import { loginSchema } from "@/schema";
+import { loginSchema } from "../../schema";
 import bcrypt from "bcryptjs";
 import { CredentialsSignin } from "next-auth";
 import zod from "zod";

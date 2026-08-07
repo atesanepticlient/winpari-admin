@@ -2,11 +2,11 @@
 
 import { INTERNAL_SERVER_ERROR, TOKEN_EXPIRED, WRONG_TOKEN } from "@/error";
 import { db } from "@/lib/db";
-import { VerificationCodeSchema } from "@/schema";
+import { VerificationCodeSchema } from "../../schema";
 import zod from "zod";
 
 export const verifiyToken = async (
-  data: zod.infer<typeof VerificationCodeSchema>
+  data: zod.infer<typeof VerificationCodeSchema>,
 ) => {
   try {
     const { token } = data;
@@ -36,5 +36,3 @@ export const verifiyToken = async (
     return { error: INTERNAL_SERVER_ERROR };
   }
 };
-
-

@@ -54,7 +54,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useForm } from "react-hook-form";
-import { MultipleRecharge } from "@/schema";
+import { MultipleRecharge } from "../../../../../schema";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {

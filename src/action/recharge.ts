@@ -2,7 +2,7 @@
 
 import { INTERNAL_SERVER_ERROR } from "@/error";
 import { db } from "@/lib/db";
-import { MultipleRecharge } from "@/schema";
+import { MultipleRecharge } from "../../schema";
 import { Prisma } from "@prisma/client";
 
 export type OperationType = "CREDIT" | "DEBIT";

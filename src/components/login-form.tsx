@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 
 import { useForm } from "react-hook-form";
 import zod from "zod";
-import { loginSchema } from "@/schema";
+import { loginSchema } from "../../schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {

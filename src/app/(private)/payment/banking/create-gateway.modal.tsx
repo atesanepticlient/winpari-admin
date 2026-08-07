@@ -29,7 +29,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { IoMdAlert } from "react-icons/io";
 import { toast } from "sonner";
 import { INTERNAL_SERVER_ERROR } from "@/error";
-import { walletCreateSchema, WalletCreateSchema } from "@/schema";
+import { walletCreateSchema, WalletCreateSchema } from "../../../../../schema";
 import { useCreatePaymentMethodMutation } from "@/lib/features/paymentApiSlice";
 
 interface CreateGatewayModalProps {
@@ -53,6 +53,13 @@ export default function CreateGatewayModal({
       walletImage: "",
       walletName: "",
       isActive: false,
+      minDeposit: 100,
+      maxDeposit: 10000,
+      minWithdraw: 100,
+      maxWithdraw: 10000,
+      currencyCode: "",
+      network: "",
+      address: "",
     },
   });
 
@@ -62,22 +69,41 @@ export default function CreateGatewayModal({
 
     setImageUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      const timestamp = Math.floor(Date.now() / 1000);
 
-      const uploadRes = await fetch("/api/upload", {
+      const signatureRes = await fetch("/api/sign-cloudinary", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timestamp }),
       });
 
-      const data = await uploadRes.json();
-
-      if (!uploadRes.ok || !data.url) {
-        toast.error(data.error || "Failed to upload image");
+      if (!signatureRes.ok) {
+        toast.error("Failed to prepare upload");
         return;
       }
 
-      form.setValue("walletImage", data.url, { shouldValidate: true });
+      const { payload } = await signatureRes.json();
+      const { signature, cloud_name, api_key } = payload;
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("api_key", api_key);
+      formData.append("timestamp", timestamp.toString());
+      formData.append("signature", signature);
+
+      const uploadRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`,
+        { method: "POST", body: formData },
+      );
+
+      const data = await uploadRes.json();
+
+      if (!uploadRes.ok || !data.secure_url) {
+        toast.error(data.error?.message || "Failed to upload image");
+        return;
+      }
+
+      form.setValue("walletImage", data.secure_url, { shouldValidate: true });
       toast.success("Image uploaded");
     } catch {
       toast.error("Failed to upload image");
@@ -87,11 +113,21 @@ export default function CreateGatewayModal({
   };
 
   const handleSubmit = (data: WalletCreateSchema) => {
-    console.log("clicked");
     const asyncAction = async () => {
+      const { currencyCode, network, address, ...rest } = data as any;
+
       const response = await createGatewayApi({
-        ...data,
+        ...rest,
         category: defaultCategory,
+        ...(defaultCategory === "CRYPTO"
+          ? {
+              cryptoData: {
+                currencyCode,
+                network,
+                address,
+              },
+            }
+          : {}),
       }).unwrap();
 
       form.reset();
@@ -167,23 +203,170 @@ export default function CreateGatewayModal({
               )}
             </div>
 
-            <FormField
-              control={form.control}
-              name="walletNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Wallet Number / Address</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={isLoading}
-                      placeholder="e.g. 01700000000 or Wallet Address"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {defaultCategory !== "CRYPTO" && (
+              <FormField
+                control={form.control}
+                name="walletNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Wallet Number</FormLabel>
+                    <FormControl>
+                      <Input
+                        disabled={isLoading}
+                        placeholder="e.g. 01700000000"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Deposit limits */}
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="minDeposit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Min Deposit</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        disabled={isLoading}
+                        placeholder="e.g. 100"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="maxDeposit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Max Deposit</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        disabled={isLoading}
+                        placeholder="e.g. 10000"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Withdraw limits */}
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="minWithdraw"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Min Withdraw</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        disabled={isLoading}
+                        placeholder="e.g. 500"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="maxWithdraw"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Max Withdraw</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        disabled={isLoading}
+                        placeholder="e.g. 50000"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Crypto fields — only relevant when this modal is opened for a CRYPTO gateway */}
+            {defaultCategory === "CRYPTO" && (
+              <div className="space-y-3 p-3 bg-slate-800/50 rounded-md border border-slate-700">
+                <p className="text-xs font-semibold text-slate-400">
+                  Crypto Details
+                </p>
+
+                <FormField
+                  control={form.control}
+                  name="currencyCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency Code</FormLabel>
+                      <FormControl>
+                        <Input
+                          disabled={isLoading}
+                          placeholder="USDT"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="network"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Network</FormLabel>
+                      <FormControl>
+                        <Input
+                          disabled={isLoading}
+                          placeholder="TRC20"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Deposit Address</FormLabel>
+                      <FormControl>
+                        <Input
+                          disabled={isLoading}
+                          placeholder="0x..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
 
             <FormField
               control={form.control}

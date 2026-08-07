@@ -332,9 +332,12 @@ model DepositEWallet {
   maxDeposit    Decimal
   isRecommended Boolean   @default(false)
   isActive      Boolean   @default(false)
-  category      WalletCategory @default(MOBILE_BANKING)   // <- replaces name-regex guessing
+  category      WalletCategory @default(MOBILE_BANKING)
   deposits      Deposit[]
-  cryptoWallet  CryptoWallet?                              // <- present only when category = CRYPTO
+  cryptoWallet  CryptoWallet?
+
+  withdrawWalletId String?          @unique
+  withdrawWallet    WithdrawEWallet? @relation(fields: [withdrawWalletId], references: [id])
 
   @@index([isActive, isRecommended(sort: Desc)])
   @@index([category])
@@ -350,11 +353,11 @@ model WithdrawEWallet {
   isActive      Boolean    @default(true)
   category      WalletCategory @default(MOBILE_BANKING)
   withdraws     Withdraw[]
+  depositWallet DepositEWallet?
 
   @@index([isActive, isRecommended(sort: Desc)])
   @@index([category])
 }
-
 // New: crypto-specific config, kept separate from the generic e-wallet table
 // on purpose — a crypto "wallet" needs an address/network, a mobile banking
 // wallet never does, so cramming both into one row was the original mistake.

@@ -6,7 +6,8 @@ export const GET = async () => {
   try {
     const depositWallets = await db.depositEWallet.findMany({
       include: {
-        cryptoWallet: true, // Includes network, address, qrCodeImage if it's a crypto wallet
+        cryptoWallet: true, // network, address, qrCodeImage for CRYPTO wallets
+        withdrawWallet: true, // linked WithdrawEWallet row — minWithdraw/maxWithdraw
       },
     });
 
@@ -18,6 +19,7 @@ export const GET = async () => {
       { status: 200 },
     );
   } catch (error) {
+    console.error("List wallets error:", error);
     return Response.json({ message: INTERNAL_SERVER_ERROR }, { status: 500 });
   }
 };
@@ -30,10 +32,12 @@ export const POST = async (req: NextRequest) => {
       walletImage,
       minDeposit = 100,
       maxDeposit = 1000,
+      minWithdraw = 100,
+      maxWithdraw = 10000,
       category = "MOBILE_BANKING",
       isRecommended = false,
       isActive = true,
-      cryptoData, // Optional object containing { currencyCode, network, address, qrCodeImage, memo }
+      cryptoData,
     } = body;
 
     if (!walletName || !walletImage) {
@@ -43,32 +47,52 @@ export const POST = async (req: NextRequest) => {
       );
     }
 
-    const createdWallet = await db.depositEWallet.create({
-      data: {
-        walletName,
-        walletImage,
-        minDeposit,
-        maxDeposit,
-        category,
-        isRecommended,
-        isActive,
-        ...(category === "CRYPTO" && cryptoData
-          ? {
-              cryptoWallet: {
-                create: {
-                  currencyCode: cryptoData.currencyCode,
-                  network: cryptoData.network,
-                  address: cryptoData.address,
-                  qrCodeImage: cryptoData.qrCodeImage,
-                  memo: cryptoData.memo,
+    if (category === "CRYPTO" && !cryptoData?.currencyCode) {
+      return Response.json(
+        { error: "Currency code is required for crypto gateways" },
+        { status: 400 },
+      );
+    }
+
+    const createdWallet = await db.$transaction(async (tx) => {
+      const withdrawWallet = await tx.withdrawEWallet.create({
+        data: {
+          walletName,
+          walletImage,
+          minWithdraw,
+          maxWithdraw,
+          category,
+          isRecommended,
+          isActive,
+        },
+      });
+
+      return tx.depositEWallet.create({
+        data: {
+          walletName,
+          walletImage,
+          minDeposit,
+          maxDeposit,
+          category,
+          isRecommended,
+          isActive,
+          withdrawWalletId: withdrawWallet.id,
+          ...(category === "CRYPTO" && cryptoData
+            ? {
+                cryptoWallet: {
+                  create: {
+                    currencyCode: cryptoData.currencyCode,
+                    network: cryptoData.network ?? "",
+                    address: cryptoData.address ?? "",
+                    qrCodeImage: cryptoData.qrCodeImage ?? null,
+                    memo: cryptoData.memo ?? null,
+                  },
                 },
-              },
-            }
-          : {}),
-      },
-      include: {
-        cryptoWallet: true,
-      },
+              }
+            : {}),
+        },
+        include: { cryptoWallet: true, withdrawWallet: true },
+      });
     });
 
     return Response.json(
@@ -76,6 +100,7 @@ export const POST = async (req: NextRequest) => {
       { status: 201 },
     );
   } catch (error) {
+    console.error("Create wallet error:", error);
     return Response.json({ message: INTERNAL_SERVER_ERROR }, { status: 500 });
   }
 };

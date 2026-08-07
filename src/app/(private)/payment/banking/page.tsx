@@ -27,6 +27,7 @@ import { UpdateGatewayModal } from "./update-gateway";
 
 export default function Methods() {
   const { data, isLoading } = useFetchPaymentMethosQuery();
+  console.log({ data });
   const [deleteWalletApi] = useDeletePaymentMethodMutation();
 
   const allMethods: any[] = React.useMemo(() => {
@@ -189,10 +190,15 @@ export default function Methods() {
                         defaultValues={{
                           maxDeposit: gateway.maxDeposit?.toString() ?? "",
                           minDeposit: gateway.minDeposit?.toString() ?? "",
+                          maxWithdraw:
+                            gateway.withdrawWallet?.maxWithdraw?.toString() ??
+                            "",
+                          minWithdraw:
+                            gateway.withdrawWallet?.minWithdraw?.toString() ??
+                            "",
                           category: gateway.category ?? "MOBILE_BANKING",
                           isActive: Boolean(gateway.isActive),
                           isRecommended: Boolean(gateway.isRecommended),
-                          // Optional safe fallbacks for crypto fields
                           currencyCode:
                             gateway.cryptoWallet?.currencyCode ?? "",
                           network: gateway.cryptoWallet?.network ?? "",
@@ -204,7 +210,7 @@ export default function Methods() {
                           Edit
                         </Button>
                       </UpdateGatewayModal>
-
+                
                       <Button
                         variant="destructive"
                         size="sm"

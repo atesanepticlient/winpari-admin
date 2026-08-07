@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import zod from "zod";
-import { gmailChangeSchema, VerificationCodeSchema } from "@/schema";
+import { gmailChangeSchema, VerificationCodeSchema } from "../../../../schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,7 @@ const SettingGmailChange = ({
   };
 
   const handleTokenVerification = (
-    data: zod.infer<typeof VerificationCodeSchema>
+    data: zod.infer<typeof VerificationCodeSchema>,
   ) => {
     startTransition(() => {
       verifiyToken(data).then((res) => {
@@ -125,7 +125,7 @@ const SettingGmailChange = ({
             <Form {...tokenVerificationForm}>
               <form
                 onSubmit={tokenVerificationForm.handleSubmit(
-                  handleTokenVerification
+                  handleTokenVerification,
                 )}
               >
                 <FormField

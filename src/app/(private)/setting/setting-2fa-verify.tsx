@@ -20,7 +20,7 @@ import {
 import zod from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { VerificationCodeSchema } from "@/schema";
+import { VerificationCodeSchema } from "../../../../schema";
 import { Input } from "@/components/ui/input";
 import { BsShieldFillCheck } from "react-icons/bs";
 const Setting2FAVerify = ({
@@ -54,9 +54,11 @@ const Setting2FAVerify = ({
     });
   };
 
-  const handleTokenVerification = (data : zod.infer<typeof VerificationCodeSchema>) => {
+  const handleTokenVerification = (
+    data: zod.infer<typeof VerificationCodeSchema>,
+  ) => {
     startTransition(() => {
-      verify2FAEmail(data ).then((res) => {
+      verify2FAEmail(data).then((res) => {
         if (res.success) {
           setOprationProgress("VERIFIED");
 
@@ -101,7 +103,7 @@ const Setting2FAVerify = ({
           <Form {...tokenVerificationForm}>
             <form
               onSubmit={tokenVerificationForm.handleSubmit(
-                handleTokenVerification
+                handleTokenVerification,
               )}
             >
               <FormField

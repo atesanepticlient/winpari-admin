@@ -11,7 +11,7 @@ import {
   EmailChangeSchema,
   NameChangeSchema,
   PasswordChangeSchema,
-} from "@/schema";
+} from "../../schema";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 

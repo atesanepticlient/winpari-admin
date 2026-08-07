@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 import { useForm } from "react-hook-form";
 import zod from "zod";
-import { agentRechargeSchema } from "@/schema";
+import { agentRechargeSchema } from "../../schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,

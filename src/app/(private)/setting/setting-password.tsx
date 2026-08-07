@@ -16,7 +16,7 @@ import {
   passwordChangeSchema,
   passwordMatcherSchema,
   VerificationCodeSchema,
-} from "@/schema";
+} from "../../../../schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,7 @@ const SettingPasswordChange = ({
   });
 
   const handeCurrentPasswordMatch = (
-    data: zod.infer<typeof passwordMatcherSchema>
+    data: zod.infer<typeof passwordMatcherSchema>,
   ) => {
     startTransition(() => {
       matchCurrentPassword(data).then((res) => {
@@ -78,7 +78,7 @@ const SettingPasswordChange = ({
   };
 
   const handleTokenVerification = (
-    data: zod.infer<typeof VerificationCodeSchema>
+    data: zod.infer<typeof VerificationCodeSchema>,
   ) => {
     startTransition(() => {
       verifiyToken(data).then((res) => {
@@ -92,7 +92,7 @@ const SettingPasswordChange = ({
   };
 
   const handleChangePassword = (
-    data: zod.infer<typeof passwordChangeSchema>
+    data: zod.infer<typeof passwordChangeSchema>,
   ) => {
     startTransition(() => {
       changePassword(data).then((res) => {
@@ -121,7 +121,7 @@ const SettingPasswordChange = ({
             <Form {...passwordMatcherForm}>
               <form
                 onSubmit={passwordMatcherForm.handleSubmit(
-                  handeCurrentPasswordMatch
+                  handeCurrentPasswordMatch,
                 )}
               >
                 <FormField
@@ -155,7 +155,7 @@ const SettingPasswordChange = ({
             <Form {...tokenVerificationForm}>
               <form
                 onSubmit={tokenVerificationForm.handleSubmit(
-                  handleTokenVerification
+                  handleTokenVerification,
                 )}
               >
                 <FormField

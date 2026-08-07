@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useFetchContactQuery } from "@/lib/features/contactApiSlice";
 import { useEffect } from "react";
-import { ContactFormData, contactSchema } from "@/schema";
+import { ContactFormData, contactSchema } from "../../../../schema";
 import { updateContactAction } from "@/action/contact";
 import { toast } from "sonner";
 import CookieLoader from "@/components/loader/cooki-loader";

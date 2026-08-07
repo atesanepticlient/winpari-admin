@@ -37,7 +37,7 @@ import zod from "zod";
 import {
   eWalletDepositInformationUpdateSchema,
   eWalletWithdrawInformationUpdateSchema,
-} from "@/schema";
+} from "../../../../../schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -231,7 +231,7 @@ const UpdateDialog = ({
   };
 
   const handleDepositUpdate = (
-    data: zod.infer<typeof eWalletDepositInformationUpdateSchema>
+    data: zod.infer<typeof eWalletDepositInformationUpdateSchema>,
   ) => {
     startTransition(() => {
       updateEWalletDeposit(data, eWalletId).then((res) => {
@@ -245,7 +245,7 @@ const UpdateDialog = ({
   };
 
   const handleWithdrawUpdate = (
-    data: zod.infer<typeof eWalletWithdrawInformationUpdateSchema>
+    data: zod.infer<typeof eWalletWithdrawInformationUpdateSchema>,
   ) => {
     startTransition(() => {
       updateEWalletWithdraw(data, eWalletId).then((res) => {

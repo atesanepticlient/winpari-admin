@@ -1,7 +1,10 @@
 "use server"; // <-- Ensure "use" is included here
 
 import { db } from "@/lib/db";
-import { bonusSettingUpdateSchema, BonusSettingUpdateSchema } from "@/schema";
+import {
+  bonusSettingUpdateSchema,
+  BonusSettingUpdateSchema,
+} from "../../schema";
 
 export const updateBonusSettingAction = async (
   data: BonusSettingUpdateSchema,

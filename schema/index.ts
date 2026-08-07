@@ -72,12 +72,20 @@ export const addBankingSchema = zod.object({
 });
 
 export const walletCreateSchema = zod.object({
-  walletImage: zod.string().min(1, "Image is required"),
-  walletName: zod.string().min(1, "Wallet Name is required"),
-  walletNumber: zod.string().min(1, "Wallet name is required"),
+  walletName: zod.string().min(1, "Wallet name is required"),
+  walletImage: zod.string().min(1, "Wallet image is required"),
+  walletNumber: zod.string().optional(),
+  isActive: zod.boolean().default(false),
+  minDeposit: zod.coerce.number().positive(),
+  maxDeposit: zod.coerce.number().positive(),
+  minWithdraw: zod.coerce.number().positive(),
+  maxWithdraw: zod.coerce.number().positive(),
+  currencyCode: zod.string().optional(),
+  network: zod.string().optional(),
+  address: zod.string().optional(),
 });
 
-export type WalletCreateSchema = zod.infer<typeof walletCreateSchema>;
+export type WalletCreateSchema = z.infer<typeof walletCreateSchema>;
 
 export const walletUpdateSchema = zod.object({
   walletNumber: zod.string().min(1, "Wallet name is required"),

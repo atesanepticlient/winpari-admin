@@ -26,7 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
 import { useUserSuspentionMutation } from "@/lib/features/userApiSlice";
-import { suspensionSchema, SuspensionSchema } from "@/schema";
+import { suspensionSchema, SuspensionSchema } from "../../../../../../schema";
 import { INTERNAL_SERVER_ERROR } from "@/error";
 
 interface SuspensionModalProps {

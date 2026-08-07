@@ -2,7 +2,7 @@
 
 import { INTERNAL_SERVER_ERROR } from "@/error";
 import { db } from "@/lib/db";
-import { addBankingSchema } from "@/schema";
+import { addBankingSchema } from "../../schema";
 import zod from "zod";
 
 export const addBanking = async (data: zod.infer<typeof addBankingSchema>) => {

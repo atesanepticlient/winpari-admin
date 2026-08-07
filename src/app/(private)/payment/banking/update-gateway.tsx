@@ -34,6 +34,8 @@ interface UpdateGatewayModalProps {
   defaultValues: {
     maxDeposit?: string;
     minDeposit?: string;
+    maxWithdraw?: string;
+    minWithdraw?: string;
     category?: string;
     rules?: string;
     isActive?: boolean;
@@ -57,6 +59,8 @@ export function UpdateGatewayModal({
     defaultValues: {
       minDeposit: defaultValues?.minDeposit ?? "",
       maxDeposit: defaultValues?.maxDeposit ?? "",
+      minWithdraw: defaultValues?.minWithdraw ?? "",
+      maxWithdraw: defaultValues?.maxWithdraw ?? "",
       category: defaultValues?.category ?? "MOBILE_BANKING",
       isActive: defaultValues?.isActive ?? true,
       isRecommended: defaultValues?.isRecommended ?? false,
@@ -78,7 +82,6 @@ export function UpdateGatewayModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {/* DialogTrigger renders the children (<Button>Edit</Button>) */}
       <DialogTrigger asChild>{children}</DialogTrigger>
 
       <DialogContent className="max-w-md bg-slate-900 text-white border-slate-800">
@@ -88,45 +91,95 @@ export function UpdateGatewayModal({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Min Deposit */}
-            <FormField
-              control={form.control}
-              name="minDeposit"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Minimum Deposit</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="e.g. 100"
-                      className="bg-slate-800 border-slate-700"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Deposit limits */}
+            <div className="space-y-3 p-3 bg-slate-800/50 rounded-md border border-slate-700">
+              <p className="text-xs font-semibold text-slate-400">
+                Deposit Limits
+              </p>
 
-            {/* Max Deposit */}
-            <FormField
-              control={form.control}
-              name="maxDeposit"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Maximum Deposit</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="e.g. 10000"
-                      className="bg-slate-800 border-slate-700"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="minDeposit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Minimum Deposit</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="e.g. 100"
+                        className="bg-slate-800 border-slate-700"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="maxDeposit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Maximum Deposit</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="e.g. 10000"
+                        className="bg-slate-800 border-slate-700"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Withdraw limits */}
+            <div className="space-y-3 p-3 bg-slate-800/50 rounded-md border border-slate-700">
+              <p className="text-xs font-semibold text-slate-400">
+                Withdraw Limits
+              </p>
+
+              <FormField
+                control={form.control}
+                name="minWithdraw"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Minimum Withdraw</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="e.g. 500"
+                        className="bg-slate-800 border-slate-700"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="maxWithdraw"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Maximum Withdraw</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="e.g. 50000"
+                        className="bg-slate-800 border-slate-700"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             {/* Crypto Fields if Applicable */}
             {form.watch("category") === "CRYPTO" && (

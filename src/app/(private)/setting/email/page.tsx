@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { adminPasswordChangeSchema, PasswordChangeSchema } from "@/schema";
+import {
+  adminPasswordChangeSchema,
+  PasswordChangeSchema,
+} from "../../../../../schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
