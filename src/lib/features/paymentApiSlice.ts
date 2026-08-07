@@ -43,7 +43,8 @@ const agentApiSlice = apiSlice.injectEndpoints({
 
     fetchDeposits: builder.query<DepositsOutput, DepostisFetchInput>({
       query: (params) => ({
-        url: `/api/payment/deposits?search=${params.search}&from=${params.from}&to=${params.to}&gateway=${params.gateway}&minAmount=${params.minAmount}&maxAmount=${params.maxAmount}&status=${params.status}&limit=${params.limit}?page=${params.page}`,
+        url: `/api/payment/deposits?search=${params.search}&from=${params.from}&to=${params.to}&gateway=${params.gateway}&minAmount=${params.minAmount}&maxAmount=${params.maxAmount}&status=${params.status}&limit=${params.limit}&page=${params.page}`,
+        //                                                                                                                                      ↑ FIXED: Changed ? to &
         method: "GET",
       }),
       providesTags: ["deposit"],
@@ -51,7 +52,8 @@ const agentApiSlice = apiSlice.injectEndpoints({
 
     fetchWithdraws: builder.query<WithdrawsOutput, WithdrawsFetchInput>({
       query: (params) => ({
-        url: `/api/payment/withdraws?search=${params.search}&from=${params.from}&to=${params.to}&card=${params.card}&minAmount=${params.minAmount}&maxAmount=${params.maxAmount}&status=${params.status}&limit=${params.limit}?page=${params.page}`,
+        url: `/api/payment/withdraws?search=${params.search}&from=${params.from}&to=${params.to}&card=${params.card}&minAmount=${params.minAmount}&maxAmount=${params.maxAmount}&status=${params.status}&limit=${params.limit}&page=${params.page}`,
+        //                                                                                                                                    ↑ FIXED: Changed ? to &
         method: "GET",
       }),
       providesTags: ["withdraw"],

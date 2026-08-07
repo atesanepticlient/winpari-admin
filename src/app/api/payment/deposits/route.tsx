@@ -19,9 +19,7 @@ export const GET = async (req: NextRequest) => {
 
     const where: Prisma.DepositWhereInput = {};
 
-    // Widened to match what the UI actually promises ("TRX ID, User ID...").
-    // Previously this only matched user.phone, so searching by deposit id,
-    // player id, or email silently returned nothing.
+    // Search across deposit ID, phone, player ID, and email
     if (search) {
       where.OR = [
         { id: { contains: search, mode: "insensitive" } },
@@ -31,6 +29,7 @@ export const GET = async (req: NextRequest) => {
       ];
     }
 
+    // Date range filtering
     if (from || to) {
       where.createdAt = {
         ...(from && { gte: new Date(from) }),
@@ -38,15 +37,12 @@ export const GET = async (req: NextRequest) => {
       };
     }
 
-    // BUG FIX: `where.ewallet!.walletName = gateway` assigned a property to
-    // `undefined` at runtime (the `!` only silences TypeScript) and threw,
-    // which the outer try/catch turned into a silent 500 any time a gateway
-    // filter was selected. `ewallet` is a required relation on Deposit, so
-    // Prisma accepts the fields object directly here.
+    // Gateway filtering - includes both CRYPTO and MOBILE_BANKING deposits
     if (gateway) {
       where.ewallet = { walletName: gateway };
     }
 
+    // Amount range filtering
     if (minAmount || maxAmount) {
       where.amount = {
         ...(minAmount && { gte: parseFloat(minAmount) }),
@@ -54,22 +50,25 @@ export const GET = async (req: NextRequest) => {
       };
     }
 
+    // Status filtering
     if (status && status !== "ALL") {
       where.status = status;
     }
 
     const deposits = await db.deposit.findMany({
       where,
-      include: { user: { include: { wallet: true } }, ewallet: true },
-      orderBy: { createdAt: "asc" },
+      include: {
+        user: {
+          include: { wallet: true },
+        },
+        ewallet: true,
+      },
+      orderBy: { createdAt: "desc" }, // ✅ FIX: Most recent first (was "asc")
       take: limit,
       skip: limit * (page - 1),
     });
 
-    // BUG FIX: was `count({ where: {} })`, i.e. always the total across ALL
-    // deposits regardless of filters. That made "Showing X of Y" and the
-    // pagination buttons wrong any time a filter was active. Now counts
-    // against the same `where` used for the page of results.
+    // Count total matching the filter criteria
     const totalFound = await db.deposit.count({ where });
 
     return Response.json(

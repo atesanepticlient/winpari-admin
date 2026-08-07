@@ -29,8 +29,7 @@ export const GET = async (req: NextRequest) => {
 
     const where: Prisma.WithdrawWhereInput = {};
 
-    // Widened to match what the UI promises ("TRX ID, User ID...") — was
-    // matching only user.phone.
+    // Search across withdrawal ID, phone, player ID, and email
     if (search) {
       where.OR = [
         { id: { contains: search, mode: "insensitive" } },
@@ -40,6 +39,7 @@ export const GET = async (req: NextRequest) => {
       ];
     }
 
+    // Date range filtering
     if (from || to) {
       where.createdAt = {
         ...(from && { gte: new Date(from) }),
@@ -47,15 +47,12 @@ export const GET = async (req: NextRequest) => {
       };
     }
 
-    // BUG FIX: `where.withdrawEWallet!.walletName = card` assigned a
-    // property onto `undefined` at runtime and threw, silently turned into a
-    // 500 by the catch block. `withdrawEWallet` is an OPTIONAL relation on
-    // Withdraw (withdrawEWalletID is nullable), so the nested filter needs
-    // Prisma's `is` wrapper rather than a bare object.
+    // Card/payment method filtering - handles optional relation correctly
     if (card) {
       where.withdrawEWallet = { is: { walletName: card } };
     }
 
+    // Amount range filtering
     if (minAmount || maxAmount) {
       where.amount = {
         ...(minAmount && { gte: parseFloat(minAmount) }),
@@ -63,6 +60,7 @@ export const GET = async (req: NextRequest) => {
       };
     }
 
+    // Status filtering
     if (status && status !== "ALL") {
       where.status = status;
     }
@@ -70,16 +68,15 @@ export const GET = async (req: NextRequest) => {
     const withdraws = await db.withdraw.findMany({
       where,
       include: { user: { include: { wallet: true } }, withdrawEWallet: true },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" }, // ✅ FIX: Most recent first (was "asc")
       take: limit,
       skip: limit * (page - 1),
     });
 
-    // BUG FIX: was `count({ where: {} })` — always the unfiltered total, so
-    // "Showing X of Y" and pagination were wrong whenever a filter was active.
+    // Count total matching the filter criteria
     const totalFound = await db.withdraw.count({ where });
 
-    // Crypto withdraws are denominated in USD. Attach the equivalent amount
+    // Crypto withdrawals are denominated in USD. Attach the equivalent amount
     // in the user's own wallet currency so the admin can see both figures
     // without doing the math by hand in the status modal.
     const hasCrypto = withdraws.some(

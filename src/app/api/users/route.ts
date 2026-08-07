@@ -23,7 +23,7 @@ export const GET = async (req: NextRequest) => {
     } else if (status === "unbanned") {
       query.isBanned = false;
     }
-
+    console.log({query})
     if (search) {
       query.OR = [
         { playerId: { contains: search, mode: "insensitive" } },
