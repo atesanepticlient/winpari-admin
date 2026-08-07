@@ -37,9 +37,6 @@ interface CreateGatewayModalProps {
   defaultCategory?: "E_WALLET" | "CRYPTO" | "CARD";
 }
 
-
-
-
 export default function CreateGatewayModal({
   children,
   defaultCategory = "E_WALLET",
@@ -65,32 +62,23 @@ export default function CreateGatewayModal({
 
     setImageUploading(true);
     try {
-      const timestamp = Math.floor(Date.now() / 1000);
-      const signatureRes = await fetch("/api/sign-cloudinary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ timestamp }),
-      });
-
-      const { payload } = await signatureRes.json();
-      const { signature, cloud_name, api_key } = payload;
-
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("api_key", api_key);
-      formData.append("timestamp", timestamp.toString());
-      formData.append("signature", signature);
 
-      const uploadRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`,
-        { method: "POST", body: formData },
-      );
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
 
       const data = await uploadRes.json();
-      if (data.secure_url) {
-        form.setValue("walletImage", data.secure_url, { shouldValidate: true });
-        toast.success("Image uploaded");
+
+      if (!uploadRes.ok || !data.url) {
+        toast.error(data.error || "Failed to upload image");
+        return;
       }
+
+      form.setValue("walletImage", data.url, { shouldValidate: true });
+      toast.success("Image uploaded");
     } catch {
       toast.error("Failed to upload image");
     } finally {
@@ -99,6 +87,7 @@ export default function CreateGatewayModal({
   };
 
   const handleSubmit = (data: WalletCreateSchema) => {
+    console.log("clicked");
     const asyncAction = async () => {
       const response = await createGatewayApi({
         ...data,

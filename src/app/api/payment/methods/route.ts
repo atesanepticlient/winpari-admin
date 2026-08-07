@@ -8,15 +8,12 @@ export const GET = async () => {
       include: {
         cryptoWallet: true, // Includes network, address, qrCodeImage if it's a crypto wallet
       },
-      orderBy: {
-        isRecommended: "desc",
-      },
     });
 
     return Response.json(
       {
         success: true,
-        payload: depositWallets,
+        payload: depositWallets.reverse(),
       },
       { status: 200 },
     );
