@@ -11,7 +11,6 @@ export const POST = async (req: NextRequest) => {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Basic guardrails
     const allowedTypes = [
       "image/png",
       "image/jpeg",
@@ -34,7 +33,6 @@ export const POST = async (req: NextRequest) => {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Sanitize + make filename unique
     const ext = path.extname(file.name) || "";
     const safeBase = path
       .basename(file.name, ext)
@@ -48,8 +46,9 @@ export const POST = async (req: NextRequest) => {
     const filePath = path.join(uploadDir, fileName);
     await writeFile(filePath, buffer);
 
-    // Full absolute URL, based on the incoming request's origin
-    const fullUrl = `${req.nextUrl.origin}/uploads/${fileName}`;
+    // Resolve the public origin: env var first, then proxy headers, then request origin
+    const origin = getPublicOrigin(req);
+    const fullUrl = `${origin}/uploads/${fileName}`;
 
     return NextResponse.json({ success: true, url: fullUrl }, { status: 201 });
   } catch (error) {
@@ -57,3 +56,20 @@ export const POST = async (req: NextRequest) => {
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 };
+
+function getPublicOrigin(req: NextRequest): string {
+  // 1. Explicit env var — most reliable, set this in production
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  }
+
+  // 2. Common reverse-proxy forwarded headers (nginx, Vercel, etc.)
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const forwardedProto = req.headers.get("x-forwarded-proto") ?? "https";
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
+  // 3. Fallback to whatever Next.js resolved
+  return req.nextUrl.origin;
+}
