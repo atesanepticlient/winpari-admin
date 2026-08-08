@@ -7,10 +7,15 @@ import { findCurrentUser } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { sendAdminVerificationTokenMail } from "@/lib/email";
 import { generateOTP } from "@/lib/helpers";
+import nodemailer from "nodemailer";
 import {
   EmailChangeSchema,
   NameChangeSchema,
   PasswordChangeSchema,
+  requestEmailOtpSchema,
+  RequestEmailOtpSchema,
+  verifyEmailOtpSchema,
+  VerifyEmailOtpSchema,
 } from "../../schema";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
@@ -233,3 +238,157 @@ export const passwordChange = async (data: PasswordChangeSchema) => {
     return { error: INTERNAL_SERVER_ERROR };
   }
 };
+
+// Configure Nodemailer with Zoho SMTP credentials
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "smtp.zoho.com",
+  port: Number(process.env.SMTP_PORT) || 465,
+  secure: true, // true for 465, false for 587
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
+  },
+});
+
+/**
+ * Step 1: Send OTP to admin.twoFAEmail
+ */
+export async function requestEmailChangeOtp(data: RequestEmailOtpSchema) {
+  try {
+    const validated = requestEmailOtpSchema.parse(data);
+    const session = await findCurrentUser();
+
+    if (!session?.id) {
+      return { error: "Unauthorized access" };
+    }
+
+    const admin = await db.admin.findUnique({
+      where: { id: session.id },
+    });
+
+    if (!admin) {
+      return { error: "Admin account not found" };
+    }
+
+    if (!admin.twoFAEmail) {
+      return { error: "No 2FA email configured for this account" };
+    }
+
+    // 1. Verify current password
+    const isPasswordValid = await bcrypt.compare(
+      validated.currentPassword,
+      admin.password,
+    );
+    if (!isPasswordValid) {
+      return { error: "Incorrect current password" };
+    }
+
+    // 2. Check if new email is already in use
+    if (admin.email === validated.newEmail) {
+      return { error: "New email must be different from current email" };
+    }
+
+    const existingEmail = await db.admin.findUnique({
+      where: { email: validated.newEmail },
+    });
+
+    if (existingEmail) {
+      return { error: "This email address is already in use" };
+    }
+
+    // 3. Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+
+    // Delete existing tokens for this admin
+    await db.adminVerificationToken.deleteMany({
+      where: { adminId: admin.id },
+    });
+
+    // Save token to DB
+    await db.adminVerificationToken.create({
+      data: {
+        adminId: admin.id,
+        newEmail: validated.newEmail,
+        token: otp,
+        expiresAt,
+      },
+    });
+
+    // 4. Send Email via SMTP directly to twoFAEmail
+    await transporter.sendMail({
+      from: `"Admin Security" <${process.env.SMTP_USER || "admin@winparibet.com"}>`,
+      to: admin.twoFAEmail, // <--- Sent to registered twoFAEmail
+      subject: "Email Change Security Authorization OTP",
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #0f172a;">Email Change Security Authorization</h2>
+          <p>A request was made to update your primary admin email address to <strong>${validated.newEmail}</strong>.</p>
+          <p>Your 6-digit verification authorization code is:</p>
+          <div style="background-color: #f1f5f9; padding: 15px; text-align: center; border-radius: 6px; font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #0284c7;">
+            ${otp}
+          </div>
+          <p style="font-size: 12px; color: #64748b; margin-top: 20px;">
+            This code will expire in 10 minutes. If you did not request this change, please secure your account immediately.
+          </p>
+        </div>
+      `,
+    });
+
+    return {
+      success: true,
+      message: "OTP sent to your 2FA security email address",
+    };
+  } catch (error: any) {
+    console.log({ error });
+    return { error: error.message || "Failed to send OTP code" };
+  }
+}
+
+/**
+ * Step 2: Verify OTP & update the Admin's email
+ */
+export async function verifyAndChangeEmail(data: VerifyEmailOtpSchema) {
+  try {
+    const validated = verifyEmailOtpSchema.parse(data);
+    const session = await findCurrentUser();
+
+    if (!session?.id) {
+      return { error: "Unauthorized access" };
+    }
+
+    // Retrieve active token
+    const verificationRecord = await db.adminVerificationToken.findFirst({
+      where: {
+        adminId: session.id,
+        token: validated.otp,
+      },
+    });
+
+    if (!verificationRecord) {
+      return { error: "Invalid OTP code" };
+    }
+
+    if (new Date() > verificationRecord.expiresAt) {
+      await db.adminVerificationToken.delete({
+        where: { id: verificationRecord.id },
+      });
+      return { error: "OTP code has expired. Please request a new one." };
+    }
+
+    // Update Email in DB
+    await db.admin.update({
+      where: { id: session.id },
+      data: { email: verificationRecord.newEmail },
+    });
+
+    // Delete used verification token
+    await db.adminVerificationToken.delete({
+      where: { id: verificationRecord.id },
+    });
+
+    return { success: true, message: "Email updated successfully" };
+  } catch (error: any) {
+    return { error: error.message || "Failed to verify OTP" };
+  }
+}

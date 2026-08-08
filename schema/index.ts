@@ -85,7 +85,7 @@ export const walletCreateSchema = zod.object({
   address: zod.string().optional(),
 });
 
-export type WalletCreateSchema = z.infer<typeof walletCreateSchema>;
+export type WalletCreateSchema = zod.infer<typeof walletCreateSchema>;
 
 export const walletUpdateSchema = zod.object({
   walletNumber: zod.string().min(1, "Wallet name is required"),
@@ -234,3 +234,15 @@ export const bonusSettingUpdateSchema = zod.object({
 export type BonusSettingUpdateSchema = zod.infer<
   typeof bonusSettingUpdateSchema
 >;
+
+export const requestEmailOtpSchema = zod.object({
+  currentPassword: zod.string().min(1, "Current password is required"),
+  newEmail: zod.string().email("Invalid email address"),
+});
+
+export const verifyEmailOtpSchema = zod.object({
+  otp: zod.string().length(6, "OTP must be exactly 6 digits"),
+});
+
+export type RequestEmailOtpSchema = zod.infer<typeof requestEmailOtpSchema>;
+export type VerifyEmailOtpSchema = zod.infer<typeof verifyEmailOtpSchema>;

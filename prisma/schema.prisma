@@ -171,6 +171,16 @@ model admin {
   twoFactorSecret String?  // TOTP secret — set once, never cleared
   ipWhitelist     String[] @default([]) // empty = no IP restriction
 }
+model AdminVerificationToken {
+  id        String   @id @default(cuid())
+  adminId   String
+  newEmail  String
+  token     String   // 6-digit OTP code
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([adminId, token])
+}
 model agent {
   id                  String @id @default(cuid())
   email               String @unique
