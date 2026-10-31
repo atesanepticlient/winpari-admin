@@ -160,7 +160,7 @@ const Details = ({ id }: { id: string }) => {
       const asyncAction = async () => {
         const res = await userDelete(user.id);
         if (res.success) {
-          window.location.href = "/users";
+          window.location.href = "/users/explor";
           return true;
         }
         throw new Error(res.error || "Failed to delete user");
